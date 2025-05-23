@@ -26,8 +26,9 @@ def get_results():
     formatted_results = [
         {
             'id': r[0],
-            'description': r[1],
-            'score': r[2]
+            'description_ita': r[1],
+            'description_eng': r[2],
+            'score': r[3]
         }
         for r in results
     ]
@@ -51,4 +52,17 @@ def submit_insertion():
 
 
 if __name__ == '__main__':
+    # with app.app_context():
+    #     reset_db()
+    #     start = time.time()
+    #     add_materials()
+    #     end = time.time()
+    #     print(f"Materials added in {end - start:.4f} seconds")
+        
+    #     start = time.time()
+    #     add_long_description()
+    #     end = time.time()
+    #     print(f"Long descriptions added in {end - start:.4f} seconds")
+
+    
     app.run()

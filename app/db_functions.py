@@ -4,7 +4,7 @@ import csv
 from rank_bm25 import BM25Okapi
 from nltk.tokenize import word_tokenize
 from collections import defaultdict
-import nltk
+import time
 
 db = SQLAlchemy()
 
@@ -12,31 +12,44 @@ db = SQLAlchemy()
 def bm25_search(query, top_n=10):
     docs = []
 
+    start = time.time()
     for material in Material.query.all():
-        if material.short_desc_it:
-            docs.append((material.id, material.short_desc_it, ''))
-        if material.short_desc_eng:
-            docs.append((material.id, material.short_desc_eng, ''))
-        if material.long_desc_it:
-            docs.append((material.id, material.long_desc_it, ''))
-        if material.long_desc_eng:
-            docs.append((material.id, material.long_desc_eng, ''))
+        ita = material.short_desc_it.strip()
+        eng = material.short_desc_eng.strip()
 
+        if material.long_desc_it:
+            ita = ita + ' ' + material.long_desc_it.strip()
+        if material.long_desc_eng:
+            eng = eng + ' ' + material.long_desc_eng.strip()
+        docs.append((material.id, ita, ''))
+        docs.append((material.id, eng, ''))
+    end = time.time()
+    print(f"Time taken to fetch documents: {end - start} seconds")
+
+    start = time.time()
     tokenized_docs = [word_tokenize(doc[1].lower()) for doc in docs]
     bm25 = BM25Okapi(tokenized_docs)
-    tokenized_query = word_tokenize(query)
+    tokenized_query = word_tokenize(query.lower())
     scores = bm25.get_scores(tokenized_query)
+    end = time.time()
+    print(f"Time taken to calculate scores: {end - start} seconds")
 
+    start = time.time()
     for i, score in enumerate(scores):
         docs[i] = (docs[i][0], docs[i][1], score)
     docs = sorted(docs, key=lambda x: x[2], reverse=True)
+    end = time.time()
+    print(f"Time taken to sort documents: {end - start} seconds")
 
+    start = time.time()
     results = []
     for d in docs:
         if d[0] not in [r[0] for r in results]:
-            results.append(d)
+            results.append((d[0], Material.query.filter_by(id=d[0]).first().short_desc_it, Material.query.filter_by(id=d[0]).first().short_desc_eng, d[2]))
         if len(results) >= top_n:
             break
+    end = time.time()
+    print(f"Time taken to filter results: {end - start} seconds")
     return results
 
 class Material(db.Model):

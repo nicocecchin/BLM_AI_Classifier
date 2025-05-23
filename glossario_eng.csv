@@ -1,0 +1,59 @@
+﻿breve;lungo
+A2;Stainless steel
+A2K;White galvanized steel
+PLAIN;Steel 
+COPPER;Copper-plated steel 
+CW508L;Brass
+YGS;Yellow galvanized steel
+FULL THD;Full thread
+PART. THD;Partly thread
+FT;Fine thread
+REPL.;Replaced
+GRUB SCREW HS FLAT END ;Grub screw Hexagon Socket flat end
+GRUB SCREW HS CYLINDR. P.;Grub screw Hexagon Socket Cylindrical Point
+GRUB SCREW HS CYLINDR.P.;Grub screw Hexagon Socket Cylindrical Point
+GRUB SCREW HS CONICAL P.;Grub screw Hexagon Socket Conical Point
+GRUB SCREW HS CUP P.;Grub screw Hexagon Socket Cup Point
+SAFETY SCREW HSBH+PIN;Safety Screw Hexagon Socket Button Head with Pin
+SCREW BH;Screw Button Head
+SCREW HSBH-CONCRETE;Screw Button Head for concrete
+SCREW HSBH;Screw Hexagon Socket Button Head
+SCREW HSBHF;Screw Hexagon Socket Button Head with Flange
+SCREW HSCH;Screw Hexagon Socket Cylindrical Head
+SCREW HSCH RECT. TANG;Screw Hexagon Socket Cylindrical Head with rectified tang
+SCREW HSCH RECT.TANG;Screw Hexagon Socket Cylindrical Head with rectified tang
+SCREW HSCH LH;Screw Hexagon Socket Cylindrical Head, Low Head
+SCREW CHS;Screw Cylindrical Head with Slot
+SCREW CHCH;Screw Cylindrical Head with Cross Head
+SCREW EH ;Screw Hexagon Head
+SCREW CFH;Screw Countersunk Flat Head
+SCREW CFHHS;Screw Countersunk Flat Head with Hexagon Socket 
+SCREW CFHS;Screw Countersunk Flat Head with Slot
+SCREW CFHCH;Screw Countersunk Flat Head with Cross Head
+SCREW CFH-WOOD;Screw Countersunk Flat Head for wood
+SCREW RHCH;Screw Raised-head cross head
+WELDING BOLT SHAPE PT;Welding bolt, shape PT
+TEARING RIVET FHBH;Tearing Rivet Flat Head Button Head
+CYLINDRICAL THD INSERT CH;Cylindrical threaded inserts Cylindrical Head
+CYLINDRICAL THD INSERT CFH;Cylindrical threaded inserts Countersunk Flat Head
+HEXAGONAL THD INSERT RH;Hexagonal threaded inserts Reduced Head
+HEXAGONAL THD INSERT CH;Hexagonal threaded inserts Cylindrical Head
+SELF-THREADING HAMMER RIVETS ;Self-threading hammer rivets 
+RIVET CFH;Rivet Countersunk Flat Head
+NEEDLE ROLLER BEARING ;Single row needle roller bearing
+2ROW DEEP GROOVE B-BEARING;Double row deep groove ball bearing
+ANG. CONT. B-EARING;Single row angular contact ball bearing
+2ROW ANG. CONT. B-BEARING;Double row angular contact ball bearing
+ANG. CONT. B-EARING;Single row angular contact ball bearing
+SELF-ALIGNING B-BEARING;Self-aligning ball bearing
+SPHERICAL ROLLER BEARING;Spherical roller bearing
+1ROW TAPERED ROLLER BEARING;Single row tapered roller bearing
+CYLINDR. ROLLER THRUST BEARING;Single row cylindrical roller thrust bearing
+ANG.CONT.THR. B-BEARING;Angular contact thrust ball bearing
+SLIM BEARING;Slim bearings
+CROSSED ROLLER BEARING;Crossed roller bearing
+WASHER N. ROLLER THR-BEARING;Washer for needle roller thrust bearings
+WASHER C/N ROLLER THR-BEARING;Washer for cylindrical and needle roller thrust bearings
+COMB. N-ROLLER/THRUST B-BEARING;Combined needle roller / thrust ball bearing
+COMB. N/CYL ROLLER THR-BEARING;Combined needle roller / cylindrical roller thrust bearing
+RADIAL SPHERICAL P-BEARING;Radial spherical plain bearing

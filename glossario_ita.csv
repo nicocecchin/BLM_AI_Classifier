@@ -1,0 +1,59 @@
+﻿breve;lungo
+A2;Acciaio inox
+A2K;Acciaio zincato bianco
+NERA;Acciaio
+RAMATO;Acciaio ramato
+CW508L;Ottone
+ZNG;Acciaio zincato giallo
+INT. FILETT.;Interamente filettata
+INT.FILETT.;Interamente filettata
+PARZ. FILETT.;Parzialmente filettata
+PARZ.FILETT.;Parzialmente filettata
+PF;Passo fine
+SOSTIT.;Sostituito
+GRANO EI P. PIANA ;Grano con esagono incassato punta piana
+GRANO EI P. CILINDRICA;Grano con esagono incassato punta cilindrica
+GRANO EI P. CONICA;Grano con esagono incassato punta conica
+GRANO EI P. COPPA;Grano con esagono incassato punta coppa
+VITE SICUREZZA TBEI+PIN;Vite di sicurezza a testa bombata ed esagono incassato con piolo
+VITE TCB;Vite a testa cilindrica bombata
+VITE TCB-CLS;Vite a testa cilindrica bombata per calcestruzzo
+VITE TCBEI;Vite a testa cilindrica bombata ed esagono incassato
+VITE TCBFEI;Vite a testa cilindrica bombata flangiata ed esagono incassato
+VITE TCEI;Vite a testa cilindrica con esagono incassato
+VITE TCEI GAMBO RETT. ;Vite a testa cilindrica con esagono incassato e gambo rettificato
+VITE TCEI TB;Vite a testa cilindrica con esagono incassato, testa bassa
+VITE TCI ;Vite a testa cilindrica con intaglio
+VITE TCIC;Vite a testa cilindrica con intaglio a croce
+VITE TE;Vite a testa esagonale
+VITE TPS;Vite a testa piana svasata
+VITE TPSEI ;Vite a testa piana svasata con esagono incassato
+VITE TPSI ;Vite a testa piana svasata con intaglio
+VITE TPSIC;Vite a testa piana svasata con intaglio a croce
+VITE TPS-LEGNO;Vite a testa piana svasata per legno
+VITE TSC;Vite a testa svasata con calotta
+PERNO A SALDARE TY-PT ;Perno da saldare, forma PT
+RIVETTO A STRAPPO TCB;Rivetto a strappo testa cilindrica bombata
+INSERTO FILET. CILIN. TC;Inserto filettato cilindrici testa cilindrica
+INSERTO FILET. CILIN. TS;Inserto filettato cilindrici testa svasata
+INSERTO FILET. ESAG. TR;Inserto filettato esagonale testa ridotta
+INSERTO FILET. ESAG. TC;Inserto filettato esagonale testa cilindrica
+RIVETTO AUTOF. A MARTELLO;Rivetto autoforante a martello
+RIBATTINO TSP;Ribattino testa piana svasata
+CUSCINETTO RULLINI ;Cuscinetto a una corona di rullini
+CUSCINETTO RADIALE 2C SFERE;Cuscinetto radiale a due corone di sfere
+CUSCINETTO OBLIQUO SFERE;Cuscinetto obliquo a una corona di sfere
+CUSCINETTO OBLIQUO 2C SFERE;Cuscinetto obliquo a due corone di sfere
+CUSCINETTO OBLIQ. SFERE;Cuscinetto obliquo a una corona di sfere
+CUSCINETTO ORIENT.SFERE;Cuscinetto orientabile a sfere
+CUSCINETTO ORIENT. RULLI;Cuscinetto orientabile a rulli
+CUSCINETTO RULLI CONICI;Cuscinetto a una corona di rulli conici
+CUSCINETTO ASSIALE RULLI CIL.;Cuscinetto assiale a una corona di rulli cilindrici
+CUSCINETTO ASSIALE OBL.;Cuscinetto assiale obliquo a sfere
+CUSCINETTO SEZ. SOTTILE ;Cuscinetto a sezione sottile
+CUSCINETTO RULLI INCROC.;Cuscinetto rulli incrociati
+RALLA CUSC. ASS. RULLINI ;Ralla per cuscinetti assiali a rullini
+RALLA CUSC. ASS. RULLI-RULLINI;Ralla per cuscinetti assiali a rulli cilindrici e a rullini
+CUSCINETTO COMB. RULLINI-SFERA;Cuscinetto combinato a rullini/assiale a sfere 
+CUSCINETTO COMB. RULLINI-RULLI;Cuscinetto combinato a rullini/assiale a rulli cilindrici 
+SNODO SFERICO RADIALE;Snodo sferico radiale

@@ -15,28 +15,29 @@ $(document).ready(function () {
     $('#okBtn').prop('disabled', true);
 
     items.forEach(item => {
-      const formattedText = `
-        <div class="d-flex w-100 justify-content-between">
-          <h6 class="mb-1">${item.id}</h6>
-          <small class="text-muted">Score: ${item.score.toFixed(2)}</small>
+      const $item = $(`
+        <div class="border rounded p-2 mb-2 result-item" style="cursor: pointer;">
+          <div class="d-flex justify-content-between align-items-start">
+            <small class="text-muted">ID: ${item.id}</small>
+            <span class="badge bg-info text-dark">Score: ${item.score.toFixed(4)}</span>
+          </div>
+          <div class="text-truncate small mt-1">
+            <strong>${item.description_ita}</strong> —
+            <em class="text-muted">${item.description_eng}</em>
+          </div>
         </div>
-        <p class="mb-1">${item.description}</p>
-      `;
-
-      const $item = $('<button>')
-        .addClass('list-group-item list-group-item-action result-item')
-        .html(formattedText);  // Usa .html invece di .text
+      `);
 
       $item.on('click', function (e) {
         e.stopPropagation();
-        const alreadySelected = $(this).hasClass('active');
+        const alreadySelected = $(this).hasClass('border-primary');
 
-        $('.result-item').removeClass('active');
+        $('.result-item').removeClass('border-primary');
         selectedItem = null;
         $('#okBtn').prop('disabled', true);
 
         if (!alreadySelected) {
-          $(this).addClass('active');
+          $(this).addClass('border-primary');
           selectedItem = item;
           $('#okBtn').prop('disabled', false);
         }
@@ -45,6 +46,7 @@ $(document).ready(function () {
       $('#results').append($item);
     });
   }
+
 
 
   // Invio input con jQuery AJAX
