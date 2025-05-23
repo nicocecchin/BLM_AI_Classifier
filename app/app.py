@@ -1,6 +1,16 @@
 from flask import Flask, render_template, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from db_functions import add_materials, add_long_description, reset_db, db, bm25_search
+import time
+import nltk
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://blmuser:BLM_AI_Classifier@localhost/blmdb'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()  
 
 @app.route('/')
 def index():
@@ -10,8 +20,18 @@ def index():
 def get_results():
     data = request.get_json()
     user_input = data.get('input', '')
-    results = [f"{user_input} risultato {i+1}" for i in range(10)]
-    return jsonify(results)
+
+    results = bm25_search(user_input)
+
+    formatted_results = [
+        {
+            'id': r[0],
+            'description': r[1],
+            'score': r[2]
+        }
+        for r in results
+    ]
+    return jsonify(formatted_results)
 
 
 @app.route('/insertion')
@@ -31,4 +51,4 @@ def submit_insertion():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

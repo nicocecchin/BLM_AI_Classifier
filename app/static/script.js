@@ -14,10 +14,18 @@ $(document).ready(function () {
     selectedItem = null;
     $('#okBtn').prop('disabled', true);
 
-    items.forEach(itemText => {
+    items.forEach(item => {
+      const formattedText = `
+        <div class="d-flex w-100 justify-content-between">
+          <h6 class="mb-1">${item.id}</h6>
+          <small class="text-muted">Score: ${item.score.toFixed(2)}</small>
+        </div>
+        <p class="mb-1">${item.description}</p>
+      `;
+
       const $item = $('<button>')
         .addClass('list-group-item list-group-item-action result-item')
-        .text(itemText);
+        .html(formattedText);  // Usa .html invece di .text
 
       $item.on('click', function (e) {
         e.stopPropagation();
@@ -29,7 +37,7 @@ $(document).ready(function () {
 
         if (!alreadySelected) {
           $(this).addClass('active');
-          selectedItem = itemText;
+          selectedItem = item;
           $('#okBtn').prop('disabled', false);
         }
       });
@@ -38,9 +46,11 @@ $(document).ready(function () {
     });
   }
 
+
   // Invio input con jQuery AJAX
   $('#submitBtn').on('click', function () {
     const input = $('#userInput').val().trim();
+    localStorage.setItem('savedUserInput', input);
     if (input) {
       $.ajax({
         url: '/get_results',
