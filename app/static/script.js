@@ -61,11 +61,33 @@ $(document).ready(function () {
         data: JSON.stringify({ input: input }),
         success: function (data) {
           renderResults(data);
+          console.log(data);
         },
         error: function () {
           alert('Errore nella richiesta al server.');
         }
       });
+    }
+  });
+
+  $(document).on('keydown', function(event) {
+    if (event.key === 'Enter') {
+      const input = $('#userInput').val().trim();
+      localStorage.setItem('savedUserInput', input);
+      if (input) {
+        $.ajax({
+          url: '/get_results',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ input: input }),
+          success: function (data) {
+            renderResults(data);
+          },
+          error: function () {
+            alert('Errore nella richiesta al server.');
+          }
+        });
+      }
     }
   });
 

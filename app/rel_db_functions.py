@@ -9,6 +9,7 @@ import time
 db = SQLAlchemy()
 
 
+
 def bm25_search(query, top_n=10):
     docs = []
 

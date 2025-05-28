@@ -44,12 +44,75 @@ $(document).ready(function () {
   }
 
   // Inizializza
-  setupSelection('#descIt', it => selectedIt = it);
-  setupSelection('#descEn', en => selectedEn = en);
+  // setupSelection('#descIt', it => selectedIt = it);
+  // setupSelection('#descEn', en => selectedEn = en);
 
+  function showSuggestions(it_suggestions, en_suggestions) {
+    $('#descIt').empty();
+    $('#descEn').empty();
+
+    it_suggestions.forEach(element => {
+      const $item = $(`
+        <input type="text" class="list-group-item editable form-control mb-2" value="${element}" readonly>
+      `);
+      $('#descIt').append($item)
+    });
+
+    en_suggestions.forEach(element => {
+      const $item = $(`
+        <input type="text" class="list-group-item editable form-control mb-2" value="${element}" readonly>
+      `);
+      $('#descEn').append($item)
+    });
+  }
+
+  $('#submitBtn').on('click', function() {
+    const input = $('#userInput').val().trim();
+    localStorage.setItem('savedUserInput', input);
+    if (input) {
+      $.ajax({
+        url: '/get_suggestions',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ input: input }),
+        success: function (data) {
+          const { ita, eng } = data;
+          showSuggestions(ita, eng)
+          console.log(data);
+        },
+        error: function () {
+          alert('Error with the suggestion request');
+        }
+      });
+    }
+  })
+
+  $(document).on('keydown', function(event) {
+    if (event.key === 'Enter') {
+      const input = $('#userInput').val().trim();
+      localStorage.setItem('savedUserInput', input);
+      if (input) {
+        $.ajax({
+          url: '/get_suggestions',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ input: input }),
+          success: function (data) {
+            const { ita, eng } = data;
+            showSuggestions(ita, eng)
+            console.log(data);
+          },
+          error: function () {
+            alert('Error with the suggestion request');
+          }
+        });
+      }
+    }
+  });
+    
   // Submit unico
   $('#createBtn').on('click', function () {
-    console.log('🖱️ submitBtn cliccato');
+    console.log('🖱️ createBtn cliccato');
     if (!(selectedIt && selectedEn)) {
       console.warn('❌ Mancano selezioni!');
       return;
