@@ -66,9 +66,29 @@ $(document).ready(function () {
     });
   }
 
+  function loading(){
+    $('#descIt').empty();
+    $('#descEn').empty();
+
+    const $loadit = $(`
+      <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+      </div>
+    `);
+    const $loaden = $(`
+      <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+      </div>
+    `);
+
+    $('#descIt').append($loadit)
+    $('#descEn').append($loaden)
+  }
+
   $('#submitBtn').on('click', function() {
     const input = $('#userInput').val().trim();
     localStorage.setItem('savedUserInput', input);
+    loading()
     if (input) {
       $.ajax({
         url: '/get_suggestions',

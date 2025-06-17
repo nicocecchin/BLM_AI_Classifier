@@ -12,7 +12,9 @@ from azure.core.exceptions import HttpResponseError, ServiceRequestError
 models = ["gpt-4o", "Meta-Llama-3.1-405B-Instruct", "Phi-3-medium-4k-instruct", "Mistral-large-2407"]
 
 # Function to get explanation from different LLM models
+# def get_llm_explanation(message, model="Meta-Llama-3.1-405B-Instruct"):
 def get_llm_explanation(model, message):
+
     # Load environment variables from .env file (e.g., for API keys)
     load_dotenv()
 
@@ -33,8 +35,8 @@ def get_llm_explanation(model, message):
         response = get_LLAMA3_1_response(params, message)
     elif model == "Phi-3-medium-4k-instruct":
         response = get_Phi3_medium_response(params, message)
-    elif model == "Mistral-large-2407":
-        response = get_Mistral_large_response(params, message)
+    # elif model == "Mistral-large-2407":
+    #     response = get_Mistral_large_response(params, message)
     else:
         response = "Model not found"  # Return a default message if the model is not recognized
 

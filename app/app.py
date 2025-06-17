@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 # from flask_sqlalchemy import SQLAlchemy
 # from rel_db_functions import add_materials, add_long_description, reset_db, db, bm25_search
-from vec_db_functions import create_vector_db, vector_search, create_collection
+from vec_db_functions import vector_search
 import time
 import nltk
 from insertion import get_suggested_descriptions

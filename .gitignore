@@ -2,5 +2,10 @@ venv/
 __pycache__/
 *.pyc
 .env
-.csv
+*.csv
 stefano_api/
+qdrant_storage/
+datasets/
+app/visualize_collections.py
+app/collections_visualization.html
+.gitignore
