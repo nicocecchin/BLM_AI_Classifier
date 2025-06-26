@@ -42,8 +42,8 @@ class Bm25(Retriever):
                         id=row[0],
                         short_desc_it=row[1],
                         short_desc_eng=row[2],
-                        long_desc_it=None,
-                        long_desc_eng=None,
+                        long_desc_it=row[3],
+                        long_desc_eng=row[4]
                     )
                     self.db.session.add(material)
                 self.db.session.commit()
