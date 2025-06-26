@@ -6,6 +6,7 @@ __pycache__/
 stefano_api/
 qdrant_storage/
 datasets/
+catalogues/
 app/visualize_collections.py
 app/collections_visualization.html
 .gitignore
