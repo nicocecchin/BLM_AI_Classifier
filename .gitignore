@@ -9,4 +9,6 @@ datasets/
 catalogues/
 app/visualize_collections.py
 app/collections_visualization.html
+utils/
+evaluator/output/
 .gitignore

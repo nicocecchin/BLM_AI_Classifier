@@ -68,8 +68,8 @@ class Bm25(Retriever):
             # tokenize the documents and calculate BM25 scores
             corpus = [doc[1].lower() for doc in docs]
             retriever = bm25s.BM25(corpus=corpus)
-            retriever.index(bm25s.tokenize(corpus))
-            results, scores = retriever.retrieve(bm25s.tokenize(query.lower()), k=self.output_length)
+            retriever.index(bm25s.tokenize(corpus), show_progress=False)
+            results, scores = retriever.retrieve(bm25s.tokenize(query.lower()), k=self.output_length, show_progress=False)
 
             # filter the results to return only unique materials
             # and limit the number of results to output_length
