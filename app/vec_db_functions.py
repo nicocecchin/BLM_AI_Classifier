@@ -5,33 +5,42 @@ from tqdm import tqdm  # Optional for progress bar
 from rel_db_functions import Material
 import time
 import csv
-from tqdm import tqdm
 
 
 qdrant_client = QdrantClient(host="localhost", port=6333)
-model = SentenceTransformer('distiluse-base-multilingual-cased-v2')
+model_old = SentenceTransformer('distiluse-base-multilingual-cased-v2')
+model = SentenceTransformer('intfloat/multilingual-e5-large')
 
 DATASETS = {
-    "Codes_50_51": "../datasets/dataset_5051.csv",
-    "Codes_AT_KT_SW_VE": "../datasets/dataset_AT_KT_SW_VE.csv",
-    "Codes_90_91": "../datasets/dataset_90_91.csv"
+    # "Codes_50_51": "../datasets/dataset_5051.csv",
+    # "Codes_AT_KT_SW_VE": "../datasets/dataset_AT_KT_SW_VE.csv",
+    # "Codes_90_91": "../datasets/dataset_90_91.csv"
+
+    # "Codes_50_51_e5": "../datasets/dataset_5051.csv",
+    # "Codes_AT_KT_SW_VE_e5": "../datasets/dataset_AT_KT_SW_VE.csv",
+    # "Codes_90_91_e5": "../datasets/dataset_90_91.csv"
+
+    "Codes_50_51_e5_mixed": "../datasets/dataset_5051.csv",
 }
 
-COLLECTION_NAME = "Codes_50_51"
+COLLECTION_NAME = "Codes_50_51_e5_mixed"
 
 def create_collections():
     for collection_name in DATASETS.keys():
         try:
-            qdrant_client.recreate_collection(
-                collection_name=collection_name,
-                vectors_config={
-                    "short_desc_ita": models.VectorParams(size=512, distance=models.Distance.COSINE),
-                    "short_desc_eng": models.VectorParams(size=512, distance=models.Distance.COSINE),
-                    "long_desc_ita": models.VectorParams(size=512, distance=models.Distance.COSINE),
-                    "long_desc_eng": models.VectorParams(size=512, distance=models.Distance.COSINE),
-                }
-            )
-            print(f"Collection {collection_name} created successfully")
+            if qdrant_client.collection_exists(collection_name=collection_name):
+                print(f"Collection {collection_name} already created")
+            else:
+                qdrant_client.create_collection(
+                    collection_name=collection_name,
+                    vectors_config={
+                        # "short_desc_ita": models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                        # "short_desc_eng": models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                        "long_desc_ita": models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                        "long_desc_eng": models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                    }
+                )
+                print(f"Collection {collection_name} created successfully")
         except Exception as e:
             print(f"Error creating collection {collection_name}: {e}")
             return False
@@ -58,15 +67,18 @@ def create_vector_dbs():
                 long_eng = row.get('long_eng', '').strip()
                 
                 # Use short description if long is empty
-                long_it = long_it if long_it else short_it
-                long_eng = long_eng if long_eng else short_eng
+                long_it = ("corto: " + short_it.lower() + ", lungo:" + long_it) if long_it else ("corto: " + short_it)
+                long_eng = ("short: " + short_eng.lower() + ", long:" + long_eng) if long_eng else ("short: " + short_eng)
+
+                # long_it = long_it if long_it else short_it
+                # long_eng = long_eng if long_eng else short_eng
                 
                 # Generate embeddings
                 embeddings = {
-                    "short_desc_ita": model.encode(short_it.lower()).tolist() if short_it else [],
-                    "short_desc_eng": model.encode(short_eng.lower()).tolist() if short_eng else [],
-                    "long_desc_ita": model.encode(long_it.lower()).tolist() if long_it else [],
-                    "long_desc_eng": model.encode(long_eng.lower()).tolist() if long_eng else []
+                    # "short_desc_ita": model.encode('passage: ' + short_it.lower(), normalize_embeddings=True).tolist() if short_it else [],
+                    # "short_desc_eng": model.encode('passage: ' + short_eng.lower(), normalize_embeddings=True).tolist() if short_eng else [],
+                    "long_desc_ita": model.encode('passage: ' + long_it.lower(), normalize_embeddings=True).tolist() if long_it else [],
+                    "long_desc_eng": model.encode('passage: ' + long_eng.lower(), normalize_embeddings=True).tolist() if long_eng else []
                 }
                 
                 # Create payload
@@ -118,6 +130,8 @@ def vector_search(query, top_n=10):
     try:
         # Generate query embedding
         query_embedding = model.encode(query.lower()).tolist()
+        # query_embedding = model_old.encode(query.lower()).tolist()
+
     except Exception as e:
         print(f"Embedding generation failed: {e}")
         return []
@@ -127,20 +141,20 @@ def vector_search(query, top_n=10):
     # Search both vectors simultaneously
     try:
         # Search Italian vectors
-        italian_short_results = qdrant_client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=NamedVector(name="short_desc_ita", vector=query_embedding),
-            limit=top_n,
-            with_payload=True
-        )
+        # italian_short_results = qdrant_client.search(
+        #     collection_name=COLLECTION_NAME,
+        #     query_vector=NamedVector(name="short_desc_ita", vector=query_embedding),
+        #     limit=top_n,
+        #     with_payload=True
+        # )
         
-        # Search English vectors
-        english_short_results = qdrant_client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=NamedVector(name="short_desc_eng", vector=query_embedding),
-            limit=top_n,
-            with_payload=True
-        )
+        # # Search English vectors
+        # english_short_results = qdrant_client.search(
+        #     collection_name=COLLECTION_NAME,
+        #     query_vector=NamedVector(name="short_desc_eng", vector=query_embedding),
+        #     limit=top_n,
+        #     with_payload=True
+        # )
 
         italian_long_results = qdrant_client.search(
             collection_name=COLLECTION_NAME,
@@ -161,7 +175,8 @@ def vector_search(query, top_n=10):
 
     # Combine and deduplicate results
     combined_results = {}
-    for hit in italian_short_results + english_short_results + italian_long_results + english_long_results:
+    # for hit in italian_short_results + english_short_results + italian_long_results + english_long_results:
+    for hit in italian_long_results + english_long_results:
         material_id = hit.payload["id"]
         if material_id not in combined_results or hit.score > combined_results[material_id].score:
             combined_results[material_id] = hit

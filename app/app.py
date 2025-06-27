@@ -24,7 +24,7 @@ def get_results():
     user_input = data.get('input', '')
 
     # results = bm25_search(user_input)
-    results = vector_search(user_input)
+    results = vector_search("query: " + user_input)
     # print(results)
     # get_suggested_descriptions(user_input, results)
 

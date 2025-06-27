@@ -1,4 +1,4 @@
-from APIs import models, get_llm_explanation
+from APIs import models, get_llm_response
 import time
 import tiktoken
 
@@ -29,7 +29,7 @@ def get_suggested_descriptions(user_input, materials):
     print(f"Tokens in the prompt: {token_count}")
     print(f"Tokens counted in: {time.time() - start_time:.2f} seconds")
     start_time = time.time()
-    response = (get_llm_explanation(model, message))
+    response = (get_llm_response(user_message=message))
     print(f"Descriptions for model {model} generated in: {time.time() - start_time:.2f} seconds")
    
     print(f"\n--- Output for model: {model} ---")
