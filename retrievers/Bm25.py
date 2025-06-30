@@ -1,6 +1,6 @@
 from typing import Dict, List, Set, Tuple
-from Retriever import Retriever
-from Item import Item
+from retrievers.Retriever import Retriever
+from retrievers.Item import Item
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 import bm25s

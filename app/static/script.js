@@ -19,7 +19,7 @@ $(document).ready(function () {
         <div class="border rounded p-2 mb-2 result-item" style="cursor: pointer;">
           <div class="d-flex justify-content-between align-items-start">
             <small class="text-muted">ID: ${item.id}</small>
-            <span class="badge bg-info text-dark">Score: ${item.score.toFixed(4)}</span>
+            <span class="badge bg-info text-dark">Score: ${item.score}</span>
           </div>
           <div class="text-truncate small mt-1">
             <strong>${item.description_ita}</strong> —

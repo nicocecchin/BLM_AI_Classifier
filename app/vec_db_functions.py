@@ -24,6 +24,7 @@ DATASETS = {
 }
 
 COLLECTION_NAME = "Codes_50_51_e5_mixed"
+# COLLECTION_NAME = "Codes_50_51"
 
 def create_collections():
     for collection_name in DATASETS.keys():
@@ -130,7 +131,7 @@ def vector_search(query, top_n=10):
     try:
         # Generate query embedding
         query_embedding = model.encode(query.lower()).tolist()
-        # query_embedding = model_old.encode(query.lower()).tolist()
+        # query_embedding = model_old.encode(query.lower(), normalize_embeddings=True).tolist()
 
     except Exception as e:
         print(f"Embedding generation failed: {e}")
@@ -140,7 +141,7 @@ def vector_search(query, top_n=10):
     
     # Search both vectors simultaneously
     try:
-        # Search Italian vectors
+        # # Search Italian vectors
         # italian_short_results = qdrant_client.search(
         #     collection_name=COLLECTION_NAME,
         #     query_vector=NamedVector(name="short_desc_ita", vector=query_embedding),

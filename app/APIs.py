@@ -36,37 +36,15 @@ def _load_config():
 PARAMS = _load_config()
 
 
-def get_llm_response(user_message: str, system_message: str = "You are a helpful assistant.") -> str:
-    for model in models:
-        timeout_count = 0
-        print(f"Trying model: {model}...")
-        while True:
-            try:
-                if model in ("gpt-4o", "gpt-4.1", "gpt-4o-mini", "gpt-4.1-mini"):  # OpenAI-compatible
-                    return _call_openai(model, system_message, user_message)
-                else:
-                    return _call_azure(model, system_message, user_message)
+def get_llm_response(system_message: str = "You are a helpful assistant.", user_message: str = "", model = "gpt-4o", token = PARAMS["token"]) -> str:
 
-            except (RateLimitError, OpenAIError) as e:
-                print(f"OpenAI error ({e}), skipping to next model.")
-                break
+    PARAMS["token"] = token  # Update token if provided
+    
+    if model in ("gpt-4o", "gpt-4.1", "gpt-4o-mini", "gpt-4.1-mini"):  # OpenAI-compatible
+        return _call_openai(model, system_message, user_message)
+    else:
+        return _call_azure(model, system_message, user_message)
 
-            except HttpResponseError as e:
-                if e.status_code == 429:
-                    print("Azure rate limit, skipping model.")
-                else:
-                    print(f"Azure HTTP error ({e.status_code}), skipping model.")
-                break
-
-            except ServiceRequestError as e:
-                print(f"Azure service request error ({e}), skipping model.")
-                break
-
-            except Exception as e:
-                print(f"Unexpected error ({e}), skipping model.")
-                break
-
-    return "All models failed or rate-limited."
 
 
 def _call_openai(model: str, system_msg: str, user_msg: str) -> str:

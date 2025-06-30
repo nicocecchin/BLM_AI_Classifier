@@ -1,5 +1,5 @@
 from typing import Dict, List, Set, Tuple
-from Item import Item
+from retrievers.Item import Item
 import os
 import argparse
 

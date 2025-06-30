@@ -1,18 +1,19 @@
 from flask import Flask, render_template, request, jsonify
-# from flask_sqlalchemy import SQLAlchemy
-# from rel_db_functions import add_materials, add_long_description, reset_db, db, bm25_search
 from vec_db_functions import vector_search
-import time
-import nltk
+import sys
+import os
 from insertion import get_suggested_descriptions
 
-app = Flask(__name__)
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://blmuser:BLM_AI_Classifier@localhost/blmdb'
-# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# db.init_app(app)
 
-# with app.app_context():
-#     db.create_all()  
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
+from retrievers.Bm25 import Bm25
+
+app = Flask(__name__)
+
+bm25 = Bm25("../datasets/catalogue_01.csv", 10)
+
 
 @app.route('/')
 def index():
@@ -23,22 +24,20 @@ def get_results():
     data = request.get_json()
     user_input = data.get('input', '')
 
-    # results = bm25_search(user_input)
-    results = vector_search("query: " + user_input)
-    # print(results)
-    # get_suggested_descriptions(user_input, results)
+    results = bm25.retrieve(user_input)
+    print(f"Time taken to retrieve results: {results[1]}")
 
     formatted_results = [
         {
-            'id': r["material_id"],
-            'description_ita': r["it"],
-            'description_eng': r["en"],
-            'score': r["score"]
+            'id': item[0].item_id,
+            'description_ita': item[0].ita_short_desc,
+            'description_eng': item[0].eng_short_desc,
+            'score': "{:.4f}".format(item[1]),
         }
-        for r in results
+        for item in results[0]
     ]
 
-    # print(formatted_results)
+    print(formatted_results)
     return jsonify(formatted_results)
 
 
@@ -67,24 +66,4 @@ def get_suggestions():
     return jsonify({'ita': ita, 'eng': eng})
 
 if __name__ == '__main__':
-    # with app.app_context():
-    #     reset_db()
-    #     start = time.time()
-    #     add_materials()
-    #     end = time.time()
-    #     print(f"Materials added in {end - start:.4f} seconds")
-        
-    #     start = time.time()
-    #     add_long_description()
-    #     end = time.time()
-    #     print(f"Long descriptions added in {end - start:.4f} seconds")
-
-    # with app.app_context():
-    #     start = time.time()
-    #     create_collection()
-    #     create_vector_db()
-    #     end = time.time()
-    #     print(print(f"Time taken to create vector database: {end - start} seconds") )
-
-    
     app.run()
