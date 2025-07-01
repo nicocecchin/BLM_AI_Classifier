@@ -12,3 +12,4 @@ app/collections_visualization.html
 utils/
 evaluator/output/
 .gitignore
+config/

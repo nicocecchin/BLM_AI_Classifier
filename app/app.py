@@ -9,10 +9,12 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
 from retrievers.Bm25 import Bm25
+from retrievers.OpenSearch import OpenSearch
 
 app = Flask(__name__)
 
 bm25 = Bm25("../datasets/catalogue_01.csv", 10)
+opensearch = OpenSearch("../datasets/catalogue_01.csv", 10)
 
 
 @app.route('/')
@@ -24,7 +26,7 @@ def get_results():
     data = request.get_json()
     user_input = data.get('input', '')
 
-    results = bm25.retrieve(user_input)
+    results = opensearch.retrieve(user_input)
     print(f"Time taken to retrieve results: {results[1]}")
 
     formatted_results = [

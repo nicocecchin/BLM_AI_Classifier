@@ -6,8 +6,8 @@ import sys
 import argparse
 retriever_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../retrievers'))
 sys.path.append(retriever_path)
-from Retriever import Retriever
-from Bm25 import Bm25
+from retrievers.Retriever import Retriever
+from retrievers.Bm25 import Bm25
 
 def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
     if model_name == 'bm25':
