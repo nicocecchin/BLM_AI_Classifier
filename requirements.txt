@@ -1,3 +1,5 @@
+pandas
+bm25s
 flask
 qdrant-client
 sentence-transformers
