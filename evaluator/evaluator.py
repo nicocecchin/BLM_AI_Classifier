@@ -4,8 +4,10 @@ import pandas as pd
 import os
 import sys
 import argparse
-retriever_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../retrievers'))
-sys.path.append(retriever_path)
+# retriever_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../retrievers'))
+# sys.path.append(retriever_path)
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
 from retrievers.Retriever import Retriever
 from retrievers.Bm25 import Bm25
 
@@ -25,7 +27,7 @@ def compute_map_k(model: Retriever, dataset: pd.DataFrame, k: int) -> Tuple[floa
         results, retrive_time = model.retrieve(query=query)
         times.append(retrive_time)
 
-        ids = [item.item_id for item, _ in results]
+        ids = [item.item_id for item, _ in results[0:k]]
         if positive_id in ids:
             rank = ids.index(positive_id) + 1
             scores.append(1.0 / rank)
@@ -40,7 +42,7 @@ def evaluate_model_on_datasets(dataset_paths: List[str], catalogue_paths: List[s
     results = []
     for dataset_path, catalogue_path in zip(dataset_paths, catalogue_paths):
         dataset = pd.read_csv(dataset_path, sep=',')
-        dataset = dataset.head(100) # limit to 100 rows for testing
+        # dataset = dataset.head(100) # limit to 100 rows for testing
         model = get_model(model_name, catalogue_path, k)
         score_1_data = compute_map_k(model, dataset, 1)
         score_k_data = compute_map_k(model, dataset, k)
