@@ -4,16 +4,25 @@ import pandas as pd
 import os
 import sys
 import argparse
+import datetime
 # retriever_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../retrievers'))
 # sys.path.append(retriever_path)
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 from retrievers.Retriever import Retriever
 from retrievers.Bm25 import Bm25
+from retrievers.Sbert import Sbert
+from retrievers.Random import Random
 
 def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
     if model_name == 'bm25':
         return Bm25(data_source=catalogue, output_length=output_length)
+    elif model_name == 'sbert_512':
+        return Sbert(data_source=catalogue, output_length=output_length, size=512)
+    elif model_name == 'sbert_1024':
+        return Sbert(data_source=catalogue, output_length=output_length, size=1024)
+    elif model_name == 'random':
+        return Random(data_source=catalogue, output_length=output_length, random_seed=123)
     else:
         raise ValueError(f"Unknown model: {model_name}")
     
@@ -38,35 +47,24 @@ def compute_map_k(model: Retriever, dataset: pd.DataFrame, k: int) -> Tuple[floa
     avg_time = sum(times) / len(times)
     return {"score": map_k, 'avg_time': avg_time}
 
-def evaluate_model_on_datasets(dataset_paths: List[str], catalogue_paths: List[str], model_name: str, k: int) -> List[Tuple[str, float, float]]:
+def evaluate_model_on_datasets(dataset_paths: List[str], dataset_name: str, catalogue_paths: List[str], model_name: str, k: int) -> List[Tuple[str, float, float]]:
     results = []
     for dataset_path, catalogue_path in zip(dataset_paths, catalogue_paths):
         dataset = pd.read_csv(dataset_path, sep=',')
-        # dataset = dataset.head(100) # limit to 100 rows for testing
+        dataset = dataset.head(100) # limit to 100 rows for testing
         model = get_model(model_name, catalogue_path, k)
-        score_1_data = compute_map_k(model, dataset, 1)
         score_k_data = compute_map_k(model, dataset, k)
-        dataset_name = "dataset_01"
-        results.append((dataset_name, score_1_data['score'], score_k_data['score'], score_k_data['avg_time']))
+        results.append((dataset_name, score_k_data['score'], score_k_data['avg_time']))
     return results
-
-def generate_latex_table(results: List[Tuple[str, float, float, float]], model_name: str, output_path: str, k: int):
-    table = "\\begin{tabular}{|l|c|c|c|}\n\\hline\n"
-    table += f"Dataset & MAP@1 & MAP@{k} ({model_name}) & Avg Time (s) \\\\ \\hline\n"
-    for dataset, map1, mapk, avg_time in results:
-        table += f"{dataset} & {map1:.4f} & {mapk:.4f} & {avg_time:.4f} \\\\ \\hline\n"
-    table += "\\end{tabular}\n"
-
-    with open(os.path.join(output_path, f"{model_name}_results.tex"), 'w') as f:
-        f.write(table)
 
 def read_arguments():
     parser = argparse.ArgumentParser(description="Python to evaluate a retriever with respect to a dataset and a catalogue.")
     
     parser.add_argument('--dataset', type=str, required=True, help='Path of the dataset.')
+    parser.add_argument('--dataset_name', type=str, required=True, help='Name of the dataset.')
     parser.add_argument('--catalogue', type=str, required=True, help='Path of the catalogue.')
     parser.add_argument('--output_folder', type=str, required=True, help='Output folder')
-    parser.add_argument('--model', type=str, required=True, help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024].')
+    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_1024', 'random'], help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024, random].')
     parser.add_argument('--k', type=int, help='MAP@k metric, number of results to consider for the Medium Average Precision (MAP) calculation.')
 
     args = parser.parse_args()
@@ -77,7 +75,9 @@ def read_arguments():
 if __name__ == '__main__':
     args = read_arguments()
     dataset_path = args['dataset']
-    output_folder = args['output_folder']
+    dataset_name = args['dataset_name']
+    current_datetime = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_folder = f"{args['output_folder']}/{current_datetime}"
     catalogue_path = args['catalogue']
     model = args['model']
     k = args['k']
@@ -85,14 +85,18 @@ if __name__ == '__main__':
     os.makedirs(output_folder, exist_ok=True)
     results = evaluate_model_on_datasets(
         dataset_paths=[dataset_path],
+        dataset_name=dataset_name,
         catalogue_paths=[catalogue_path],
         model_name=model,
         k=k
     )
 
     # print the results
-    for dataset, map1, mapk, avg_time in results:
-        print(f"Dataset: {dataset}, MAP@1: {map1:.4f}, MAP@{k}: {mapk:.4f}, Avg Time: {avg_time:.4f} seconds")
+    for dataset, mapk, avg_time in results:
+        print(f"Dataset: {dataset}, MAP@{k}: {mapk:.4f}, Avg Time: {avg_time:.4f} seconds")
 
-    generate_latex_table(results, model_name=model, output_path=output_folder, k=k)
-    print(f"Evaluation completed. LaTeX table saved in {output_folder}.")
+    # save the results to a CSV file
+    output_file = os.path.join(output_folder, f"results_{model}_k_{k}.csv")
+    results_df = pd.DataFrame(results, columns=['Dataset', f'MAP@{k}', 'Avg Time (seconds)'])
+    results_df.to_csv(output_file, index=False)
+    print(f"Evaluation completed. Output saved in {output_folder}.")

@@ -16,7 +16,7 @@ def read_arguments():
     
     parser.add_argument('--catalogue', type=str, required=True, help='Path to the data source file.')
     parser.add_argument('--query', type=str, required=True, help='User query.')
-    parser.add_argument('--model', type=str, required=True, help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024].')
+    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_1024', 'random'], help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024, random].')
     parser.add_argument('--output_length', type=int, required=True, help='Number of results to return.')
 
     args = parser.parse_args()
@@ -27,6 +27,8 @@ def read_arguments():
 if __name__ == '__main__':
     # retrievers
     from Bm25 import Bm25
+    from Sbert import Sbert
+    from Random import Random
 
     args = read_arguments()
     catalogue = args['catalogue']
@@ -36,6 +38,14 @@ if __name__ == '__main__':
 
     if model == 'bm25':
         retriever = Bm25(catalogue, output_length)
+    elif model == 'sbert_512':
+        retriever = Sbert(catalogue, output_length, 512)
+    elif model == 'sbert_1024':
+        retriever = Sbert(catalogue, output_length, 1024)
+    elif model == 'random':
+        retriever = Random(catalogue, output_length, random_seed=123)
+    else:
+        raise ValueError(f"Unknown model: {model}. Supported models are: bm25, sbert_512, sbert_1024, random.")
     
     results, time_taken = retriever.retrieve(query)
     for i,r in enumerate(results):
