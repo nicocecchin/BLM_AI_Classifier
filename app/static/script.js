@@ -7,6 +7,50 @@ $(document).ready(function () {
         
     }
 
+  let models = []
+
+  $.getJSON('/models', function(data) {
+    const models = data;
+    const $container = $('#modelSelection');
+    let selectedModel = 'bm25';
+
+    models.forEach(model => {
+      const $btn = $(`
+        <button
+          type="button"
+          class="btn btn-outline-primary me-2 ${model === selectedModel ? 'btn-model-selected' : ''}"
+          data-model="${model}"
+        >
+          ${model}
+        </button>
+      `);
+
+      $btn.on('click', function() {
+        selectedModel = $(this).data('model');
+
+        // Aggiorna la selezione visiva
+        $container.find('button').removeClass('btn-model-selected');
+        $(this).addClass('btn-model-selected');
+
+        // Invia al server
+        $.ajax({
+          url: '/set_model',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ model: selectedModel }),
+          success: function(response) {
+            console.log('Modello selezionato:', response.model);
+          },
+          error: function() {
+            alert('Errore nella richiesta al server.');
+          }
+        });
+      });
+
+      $container.append($btn);
+    });
+  });
+
 
   // Funzione per mostrare i risultati
   function renderResults(items) {

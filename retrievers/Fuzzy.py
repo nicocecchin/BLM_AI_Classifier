@@ -3,11 +3,12 @@ from retrievers.Retriever import Retriever
 from retrievers.Item import Item
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
-import bm25s
+from thefuzz import fuzz
+from thefuzz import process
 import time
 import csv
 
-class Bm25(Retriever):
+class Fuzzy(Retriever):
     def __init__(self, data_source: str, output_length: int):
         super().__init__(data_source, output_length)
         
@@ -65,27 +66,24 @@ class Bm25(Retriever):
                 docs.append((material.id, ita, ''))
                 docs.append((material.id, eng, ''))
 
-            # tokenize the documents and calculate BM25 scores
             corpus = [doc[1].lower() for doc in docs]
-            retriever = bm25s.BM25(corpus=corpus)
-            retriever.index(bm25s.tokenize(corpus), show_progress=False)
-            results, scores = retriever.retrieve(bm25s.tokenize(query.lower()), k=self.output_length*2, show_progress=False)
+            retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_sort_ratio, limit=self.output_length*2)
 
-            # filter the results to return only unique materials
-            # and limit the number of results to output_length
             output = []
             seen = set()
-            for i, r in enumerate(results[0]):
+            for item in retriever:
+                r = item[0]
+                score = item[1] 
+                if len(output) >= self.output_length:
+                    break
                 for d in docs:
-                    if len(output) >= self.output_length:
-                        break
-                    if d[1].lower() == r  and d[0] not in seen:
-                        item = Item(
+                    if (d[1].lower() == r or d[2].lower() == r) and d[0] not in seen:
+                        item_obj = Item(
                             item_id=d[0],
                             ita_short_desc=self.Material.query.filter_by(id=d[0]).first().short_desc_it,
                             eng_short_desc=self.Material.query.filter_by(id=d[0]).first().short_desc_eng,
                         )
-                        output.append((item, scores[0][i]))
+                        output.append((item_obj, score))
                         seen.add(d[0])
                         break
             

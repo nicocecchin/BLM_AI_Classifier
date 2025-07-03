@@ -4,27 +4,58 @@ import sys
 import os
 from insertion import get_suggested_descriptions
 
-
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
 from retrievers.Bm25 import Bm25
+from retrievers.Fuzzy import Fuzzy
+from retrievers.Sbert import Sbert
 
 app = Flask(__name__)
 
 bm25 = Bm25("../datasets/catalogue_01.csv", 10)
+fuzzy = Fuzzy("../datasets/catalogue_01.csv", 10)
+sbert_512 = Sbert("../datasets/catalogue_01.csv", 10, size=512)
+sbert_1024 = Sbert("../datasets/catalogue_01.csv", 10, size=1024)
 
+models = ['bm25', 'fuzzy', 'sbert_512', 'sbert_1024']
+model = bm25 # Default model
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/models')
+def list_models():
+    return jsonify(models)
+
+@app.route('/set_model', methods=['POST'])
+def set_model():
+    selected_model = request.json.get('model')
+    if selected_model:
+        if selected_model == 'bm25':
+            global model
+            model = bm25
+        elif selected_model == 'fuzzy':
+            model = fuzzy
+        elif selected_model == 'sbert_512':  
+            model = sbert_512
+        elif selected_model == 'sbert_1024':
+            model = sbert_1024
+        else:
+            return jsonify({"status": "error", "message": "Unknown model"}), 400
+        # Set the model for the current session or user
+        print(f"Model set to: {selected_model}")
+        return jsonify({"status": "success", "model": selected_model})
+    return jsonify({"status": "error", "message": "No model specified"}), 400
+
 @app.route('/get_results', methods=['POST'])
 def get_results():
     data = request.get_json()
     user_input = data.get('input', '')
+    
+    results = model.retrieve(user_input)
 
-    results = bm25.retrieve(user_input)
     print(f"Time taken to retrieve results: {results[1]}")
 
     formatted_results = [

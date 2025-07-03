@@ -13,6 +13,7 @@ from retrievers.Retriever import Retriever
 from retrievers.Bm25 import Bm25
 from retrievers.Sbert import Sbert
 from retrievers.Random import Random
+from retrievers.Fuzzy import Fuzzy
 
 def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
     if model_name == 'bm25':
@@ -23,6 +24,8 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return Sbert(data_source=catalogue, output_length=output_length, size=1024)
     elif model_name == 'random':
         return Random(data_source=catalogue, output_length=output_length, random_seed=123)
+    elif model_name == 'fuzzy':
+        return Fuzzy(data_source=catalogue, output_length=output_length)
     else:
         raise ValueError(f"Unknown model: {model_name}")
     
@@ -64,7 +67,7 @@ def read_arguments():
     parser.add_argument('--dataset_name', type=str, required=True, help='Name of the dataset.')
     parser.add_argument('--catalogue', type=str, required=True, help='Path of the catalogue.')
     parser.add_argument('--output_folder', type=str, required=True, help='Output folder')
-    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_1024', 'random'], help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024, random].')
+    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_1024', 'random', 'fuzzy'], help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024, random, fuzzy].')
     parser.add_argument('--k', type=int, help='MAP@k metric, number of results to consider for the Medium Average Precision (MAP) calculation.')
 
     args = parser.parse_args()
