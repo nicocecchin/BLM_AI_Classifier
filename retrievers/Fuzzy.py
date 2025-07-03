@@ -9,9 +9,14 @@ import time
 import csv
 
 class Fuzzy(Retriever):
-    def __init__(self, data_source: str, output_length: int):
+    def __init__(self, data_source: str, output_length: int, method: str):
         super().__init__(data_source, output_length)
         
+        # check if the method is supported
+        if method not in ['token_sort_ratio', 'token_set_ratio', 'ratio']:
+            raise ValueError(f"Unknown method: {method}. Supported methods are 'token_sort_ratio', 'token_set_ratio', 'ratio'.")
+        self.method = method
+
         # create and configure the Flask app
         self.app:Flask.app.Flask = Flask(__name__)
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
@@ -67,7 +72,12 @@ class Fuzzy(Retriever):
                 docs.append((material.id, eng, ''))
 
             corpus = [doc[1].lower() for doc in docs]
-            retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_sort_ratio, limit=self.output_length*2)
+            if self.method == 'token_sort_ratio':
+                retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_sort_ratio, limit=self.output_length*2)
+            elif self.method == 'token_set_ratio':
+                retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_set_ratio, limit=self.output_length*2)
+            elif self.method == 'ratio':
+                retriever = process.extract(query.lower(), corpus, scorer=fuzz.ratio, limit=self.output_length*2)
 
             output = []
             seen = set()

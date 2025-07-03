@@ -12,3 +12,4 @@ azure-core
 azure-ai-inference
 mistralai
 tiktoken
+thefuzz
