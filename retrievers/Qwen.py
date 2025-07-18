@@ -34,9 +34,9 @@ class Qwen(Retriever):
         # create qdrant client and database
         #self.qdrant_client = QdrantClient(":memory:")
         self.qdrant_client = QdrantClient(host="localhost", port=6333)
-        if not self.qdrant_client.collection_exists(collection_name="vector-database-"+str(self.size)):
+        if not self.qdrant_client.collection_exists(collection_name="vector-database-qwen-"+str(self.size)):
             self.qdrant_client.recreate_collection(
-                collection_name="vector-database-"+str(self.size),
+                collection_name="vector-database-qwen-"+str(self.size),
                 vectors_config={
                     "short_desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
                     "short_desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
@@ -100,7 +100,7 @@ class Qwen(Retriever):
                     point_id += 1
                     if len(points) >= 100:  # upload points in batches of 100
                         self.qdrant_client.upsert(
-                            collection_name="vector-database-"+str(self.size),
+                            collection_name="vector-database-qwen-"+str(self.size),
                             points=points
                         )
                         points = []
@@ -108,11 +108,11 @@ class Qwen(Retriever):
             # upload points to the vector database
             if points:
                 self.qdrant_client.upsert(
-                    collection_name="vector-database-"+str(self.size),
+                    collection_name="vector-database-qwen-"+str(self.size),
                     points=points
                 )
             
-        info = self.qdrant_client.get_collection("vector-database-"+str(self.size))
+        info = self.qdrant_client.get_collection("vector-database-qwen-"+str(self.size))
         print(f"Vector database ready. Points: {info.points_count}")
 
     def retrieve(self, query:str) -> Tuple[List[Tuple[Item, float]], float]:
@@ -123,7 +123,7 @@ class Qwen(Retriever):
 
         # search in the vector database
         results = self.qdrant_client.search(
-            collection_name="vector-database-"+str(self.size),
+            collection_name="vector-database-qwen-"+str(self.size),
             query_vector=models.NamedVector(name="long_desc_ita", vector=query_vector),
             limit=self.output_length
         )
