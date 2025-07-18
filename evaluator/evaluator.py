@@ -12,6 +12,7 @@ sys.path.insert(0, project_root)
 from retrievers.Retriever import Retriever
 from retrievers.Bm25 import Bm25
 from retrievers.Sbert import Sbert
+from retrievers.Qwen import Qwen
 from retrievers.Random import Random
 from retrievers.Fuzzy import Fuzzy
 
@@ -20,8 +21,16 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return Bm25(data_source=catalogue, output_length=output_length)
     elif model_name == 'sbert_512':
         return Sbert(data_source=catalogue, output_length=output_length, size=512)
+    elif model_name == 'sbert_768':
+        return Sbert(data_source=catalogue, output_length=output_length, size=768)
     elif model_name == 'sbert_1024':
         return Sbert(data_source=catalogue, output_length=output_length, size=1024)
+    elif model_name == 'qwen_1024':
+        return Qwen(data_source=catalogue, output_length=output_length, size=1024)
+    elif model_name == 'qwen_2560':
+        return Qwen(data_source=catalogue, output_length=output_length, size=2560)
+    elif model_name == 'qwen_4096':
+        return Qwen(data_source=catalogue, output_length=output_length, size=4096)
     elif model_name == 'random':
         return Random(data_source=catalogue, output_length=output_length, random_seed=123)
     elif model_name == 'fuzzy_ratio':
@@ -71,7 +80,7 @@ def read_arguments():
     parser.add_argument('--dataset_name', type=str, required=True, help='Name of the dataset.')
     parser.add_argument('--catalogue', type=str, required=True, help='Path of the catalogue.')
     parser.add_argument('--output_folder', type=str, required=True, help='Output folder')
-    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_1024', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio'], help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024, random, fuzzy_ratio, fuzzy_sort_ratio, fuzzy_set_ratio].')
+    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_768', 'sbert_1024', 'qwen_1024', 'qwen_2560', 'qwen_4096', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio'], help='Algorithm model to use for retrieval [bm25, sbert_512, sbert_1024, random, fuzzy_ratio, fuzzy_sort_ratio, fuzzy_set_ratio].')
     parser.add_argument('--k', type=int, help='MAP@k metric, number of results to consider for the Medium Average Precision (MAP) calculation.')
 
     args = parser.parse_args()

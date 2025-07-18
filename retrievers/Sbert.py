@@ -24,6 +24,8 @@ class Sbert(Retriever):
         # init model
         if self.size == 512:
             self.model = SentenceTransformer('distiluse-base-multilingual-cased-v2', device=device)
+        elif self.size == 768:
+            self.model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2', device=device)
         elif self.size == 1024:
             self.model = SentenceTransformer('intfloat/multilingual-e5-large', device=device)
         else:
