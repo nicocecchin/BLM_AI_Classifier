@@ -8,8 +8,8 @@ import time
 import csv
 import torch
 
-class Qwen(Retriever):
-    def __init__(self, data_source: str, output_length: int, size: int):
+class Gte(Retriever):
+    def __init__(self, data_source: str, output_length: int):
         super().__init__(data_source, output_length)
         
         if torch.cuda.is_available():
@@ -19,31 +19,19 @@ class Qwen(Retriever):
         else:
             device = "cpu"
 
-        self.size = size
-
-        # init model
-        if self.size == 1024:
-            self.model = SentenceTransformer('Qwen/Qwen3-Embedding-0.6B', device=device)
-        elif self.size == 2560:
-            self.model = SentenceTransformer('Qwen/Qwen3-Embedding-4B', device=device)
-        elif self.size == 4096:
-            self.model = SentenceTransformer('Qwen/Qwen3-Embedding-8B', device=device)
-        else:
-            raise ValueError(f"Unknown model size: {size}")
+        self.model = SentenceTransformer('Alibaba-NLP/gte-multilingual-base', device=device, trust_remote_code=True)
         
         # create qdrant client and database
         #self.qdrant_client = QdrantClient(":memory:")
-        timeout = None if self.size != 4096 else 60.0  # adjust timeout based on model size
-        print(f"Using timeout: {timeout} seconds for model size {self.size}")
-        self.qdrant_client = QdrantClient(host="localhost", port=6333, timeout=timeout)
-        if not self.qdrant_client.collection_exists(collection_name="vector-database-qwen-"+str(self.size)):
+        self.qdrant_client = QdrantClient(host="localhost", port=6333)
+        if not self.qdrant_client.collection_exists(collection_name="vector-database-gte"):
             self.qdrant_client.recreate_collection(
-                collection_name="vector-database-qwen-"+str(self.size),
+                collection_name="vector-database-gte",
                 vectors_config={
-                    "short_desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "short_desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "long_desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "long_desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
+                    "short_desc_ita": models.VectorParams(size=768, distance=models.Distance.COSINE),
+                    "short_desc_eng": models.VectorParams(size=768, distance=models.Distance.COSINE),
+                    "long_desc_ita": models.VectorParams(size=768, distance=models.Distance.COSINE),
+                    "long_desc_eng": models.VectorParams(size=768, distance=models.Distance.COSINE),
                 }
             )
 
@@ -92,10 +80,9 @@ class Qwen(Retriever):
                     )
                     points.append(point)
                     point_id += 1
-                    batch_size = 100 if self.size != 4096 else 20  # adjust batch size based on model size
-                    if len(points) >= batch_size:
+                    if len(points) >= 100:  # upload points in batches of 100
                         self.qdrant_client.upsert(
-                            collection_name="vector-database-qwen-"+str(self.size),
+                            collection_name="vector-database-gte",
                             points=points
                         )
                         points = []
@@ -103,11 +90,11 @@ class Qwen(Retriever):
             # upload points to the vector database
             if points:
                 self.qdrant_client.upsert(
-                    collection_name="vector-database-qwen-"+str(self.size),
+                    collection_name="vector-database-gte",
                     points=points
                 )
             
-        info = self.qdrant_client.get_collection("vector-database-qwen-"+str(self.size))
+        info = self.qdrant_client.get_collection("vector-database-gte")
         print(f"Vector database ready. Points: {info.points_count}")
 
     def retrieve(self, query:str) -> Tuple[List[Tuple[Item, float]], float]:
@@ -118,7 +105,7 @@ class Qwen(Retriever):
 
         # search in the vector database
         results = self.qdrant_client.search(
-            collection_name="vector-database-qwen-"+str(self.size),
+            collection_name="vector-database-gte",
             query_vector=models.NamedVector(name="long_desc_ita", vector=query_vector),
             limit=self.output_length
         )

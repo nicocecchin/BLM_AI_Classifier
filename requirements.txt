@@ -13,3 +13,8 @@ azure-ai-inference
 mistralai
 tiktoken
 thefuzz
+FlagEmbedding
+einops
+ollama
+llama-index
+llama_index.embeddings.ollama

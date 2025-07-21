@@ -1,15 +1,15 @@
 from typing import Dict, List, Set, Tuple
 from retrievers.Retriever import Retriever
+from FlagEmbedding import BGEM3FlagModel
 from qdrant_client import QdrantClient, models
-from sentence_transformers import SentenceTransformer
 from retrievers.Item import Item
 from tqdm import tqdm
 import time
 import csv
 import torch
 
-class Qwen(Retriever):
-    def __init__(self, data_source: str, output_length: int, size: int):
+class Bge(Retriever):
+    def __init__(self, data_source: str, output_length: int, return_dense: bool = True, return_sparse: bool = False):
         super().__init__(data_source, output_length)
         
         if torch.cuda.is_available():
@@ -18,32 +18,30 @@ class Qwen(Retriever):
             device = "mps"
         else:
             device = "cpu"
-
-        self.size = size
-
-        # init model
-        if self.size == 1024:
-            self.model = SentenceTransformer('Qwen/Qwen3-Embedding-0.6B', device=device)
-        elif self.size == 2560:
-            self.model = SentenceTransformer('Qwen/Qwen3-Embedding-4B', device=device)
-        elif self.size == 4096:
-            self.model = SentenceTransformer('Qwen/Qwen3-Embedding-8B', device=device)
+        
+        if return_dense and return_sparse:
+            raise ValueError("Cannot return both dense and sparse vectors. Choose one of them.")
+        
+        if return_dense:
+            self.model = BGEM3FlagModel("BAAI/bge-m3", devices=device, return_dense=True, return_sparse=False)
+            self.mode = "dense_vecs"
+        elif return_sparse:
+            self.model = BGEM3FlagModel("BAAI/bge-m3", devices=device, return_dense=False, return_sparse=True)
+            self.mode = "lexical_weights"
         else:
-            raise ValueError(f"Unknown model size: {size}")
+            raise ValueError("At least one of return_dense or return_sparse must be True.")
         
         # create qdrant client and database
         #self.qdrant_client = QdrantClient(":memory:")
-        timeout = None if self.size != 4096 else 60.0  # adjust timeout based on model size
-        print(f"Using timeout: {timeout} seconds for model size {self.size}")
-        self.qdrant_client = QdrantClient(host="localhost", port=6333, timeout=timeout)
-        if not self.qdrant_client.collection_exists(collection_name="vector-database-qwen-"+str(self.size)):
+        self.qdrant_client = QdrantClient(host="localhost", port=6333)
+        if not self.qdrant_client.collection_exists(collection_name=f"vector-database-bge-{self.mode}"):
             self.qdrant_client.recreate_collection(
-                collection_name="vector-database-qwen-"+str(self.size),
+                collection_name=f"vector-database-bge-{self.mode}",
                 vectors_config={
-                    "short_desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "short_desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "long_desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "long_desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
+                    "short_desc_ita": models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                    "short_desc_eng": models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                    "long_desc_ita": models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                    "long_desc_eng": models.VectorParams(size=1024, distance=models.Distance.COSINE),
                 }
             )
 
@@ -69,10 +67,10 @@ class Qwen(Retriever):
                         long_eng = short_eng
 
                     # create vectors
-                    vector_short_it = self.model.encode(short_it, convert_to_numpy=True)
-                    vector_short_eng = self.model.encode(short_eng, convert_to_numpy=True)
-                    vector_long_it = self.model.encode(long_it, convert_to_numpy=True)
-                    vector_long_eng = self.model.encode(long_eng, convert_to_numpy=True)
+                    vector_short_it = self.model.encode([short_it], convert_to_numpy=True)[self.mode][0]
+                    vector_short_eng = self.model.encode([short_eng], convert_to_numpy=True)[self.mode][0]
+                    vector_long_it = self.model.encode([long_it], convert_to_numpy=True)[self.mode][0]
+                    vector_long_eng = self.model.encode([long_eng], convert_to_numpy=True)[self.mode][0]
 
                     point = models.PointStruct(
                         id=point_id,
@@ -92,10 +90,9 @@ class Qwen(Retriever):
                     )
                     points.append(point)
                     point_id += 1
-                    batch_size = 100 if self.size != 4096 else 20  # adjust batch size based on model size
-                    if len(points) >= batch_size:
+                    if len(points) >= 100:  # upload points in batches of 100
                         self.qdrant_client.upsert(
-                            collection_name="vector-database-qwen-"+str(self.size),
+                            collection_name=f"vector-database-bge-{self.mode}",
                             points=points
                         )
                         points = []
@@ -103,22 +100,23 @@ class Qwen(Retriever):
             # upload points to the vector database
             if points:
                 self.qdrant_client.upsert(
-                    collection_name="vector-database-qwen-"+str(self.size),
+                    collection_name=f"vector-database-bge-{self.mode}",
                     points=points
                 )
             
-        info = self.qdrant_client.get_collection("vector-database-qwen-"+str(self.size))
+        info = self.qdrant_client.get_collection(f"vector-database-bge-{self.mode}")
         print(f"Vector database ready. Points: {info.points_count}")
 
     def retrieve(self, query:str) -> Tuple[List[Tuple[Item, float]], float]:
         start = time.time()
 
         # encode the query
-        query_vector = self.model.encode(query.lower(), convert_to_numpy=True)
+        query_vector = self.model.encode([query.lower()], convert_to_numpy=True)[self.mode][0]
+        print(f"Query vector: {query_vector}")
 
         # search in the vector database
         results = self.qdrant_client.search(
-            collection_name="vector-database-qwen-"+str(self.size),
+            collection_name=f"vector-database-bge-{self.mode}",
             query_vector=models.NamedVector(name="long_desc_ita", vector=query_vector),
             limit=self.output_length
         )
