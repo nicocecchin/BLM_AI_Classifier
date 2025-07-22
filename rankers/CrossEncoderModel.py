@@ -4,11 +4,12 @@ import csv
 import torch
 from sentence_transformers import CrossEncoder
 from retrievers.Item import Item
+from rankers.Ranker import Ranker
 
-class CrossEncoderModel:
+
+class CrossEncoderModel(Ranker):
     def __init__(self, output_length: int, model_name: str):
-        self.output_length = output_length
-        
+        super().__init__(output_length)        
         # Initialize the cross-encoder model
         if torch.cuda.is_available():
             device = "cuda"

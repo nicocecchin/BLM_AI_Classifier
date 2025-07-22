@@ -18,11 +18,12 @@ bm25 = Bm25("../datasets/catalogue_01.csv", 10)
 fuzzy = Fuzzy("../datasets/catalogue_01.csv", 10, method='token_sort_ratio')
 sbert_512 = Sbert("../datasets/catalogue_01.csv", 10, size=512)
 sbert_1024 = Sbert("../datasets/catalogue_01.csv", 10, size=1024)
-hybrid1 = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="bm25", ranker_name="cross_encoder", model_name="ms-marco-MiniLM-L-6-v2")
-hybrid2 = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="bm25", ranker_name="cross_encoder", model_name="ms-marco-TinyBERT-L-2-v2")
-hybrid3 = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="sbert_1024", ranker_name="cross_encoder", model_name="ms-marco-MiniLM-L-6-v2")
+hybrid_bm25_crossencoder = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="bm25", ranker_name="cross_encoder", model_name="ms-marco-MiniLM-L-6-v2")
+hybrid_sbert_1024_crossencoder = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="sbert_1024", ranker_name="cross_encoder", model_name="ms-marco-MiniLM-L-6-v2")
+hybrid_sbert_1024_bm25 = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="sbert_1024", ranker_name="bm25")
+hybrid_sbert_1024_fuzzy = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="sbert_1024", ranker_name="fuzzy", model_name='token_sort_ratio')
 
-models = ['bm25', 'fuzzy', 'sbert_512', 'sbert_1024', 'hybrid1', 'hybrid2', 'hybrid3']
+models = ['bm25', 'fuzzy', 'sbert_512', 'sbert_1024', 'hybrid_bm25_crossencoder', 'hybrid_sbert_1024_crossencoder', 'hybrid_sbert_1024_bm25', 'hybrid_sbert_1024_fuzzy']
 model = bm25 # Default model
 
 @app.route('/')
@@ -46,12 +47,14 @@ def set_model():
             model = sbert_512
         elif selected_model == 'sbert_1024':
             model = sbert_1024
-        elif selected_model == 'hybrid1':
-            model = hybrid1
-        elif selected_model == 'hybrid2':
-            model = hybrid2
-        elif selected_model == 'hybrid3':
-            model = hybrid3
+        elif selected_model == 'hybrid_bm25_crossencoder':
+            model = hybrid_bm25_crossencoder
+        elif selected_model == 'hybrid_sbert_1024_crossencoder':
+            model = hybrid_sbert_1024_crossencoder
+        elif selected_model == 'hybrid_sbert_1024_bm25':
+            model = hybrid_sbert_1024_bm25
+        elif selected_model == 'hybrid_sbert_1024_fuzzy': 
+            model = hybrid_sbert_1024_fuzzy
         else:
             return jsonify({"status": "error", "message": "Unknown model"}), 400
         # Set the model for the current session or user

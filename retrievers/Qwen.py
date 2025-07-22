@@ -40,10 +40,8 @@ class Qwen(Retriever):
             self.qdrant_client.recreate_collection(
                 collection_name="vector-database-qwen-"+str(self.size),
                 vectors_config={
-                    "short_desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "short_desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "long_desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "long_desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
+                    "desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
+                    "desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
                 }
             )
 
@@ -62,6 +60,13 @@ class Qwen(Retriever):
                     long_it = row.get('long_it', '').strip()
                     long_eng = row.get('long_eng', '').strip()
 
+                    it = "corta: " + short_it 
+                    if long_it:
+                        it += f" | lunga: {long_it}"
+                    eng = "short: " + short_eng
+                    if long_eng:
+                        eng += f" | long: {long_eng}"
+
                     # use short description if long is empty
                     if not long_it:
                         long_it = short_it
@@ -69,18 +74,14 @@ class Qwen(Retriever):
                         long_eng = short_eng
 
                     # create vectors
-                    vector_short_it = self.model.encode(short_it, convert_to_numpy=True)
-                    vector_short_eng = self.model.encode(short_eng, convert_to_numpy=True)
-                    vector_long_it = self.model.encode(long_it, convert_to_numpy=True)
-                    vector_long_eng = self.model.encode(long_eng, convert_to_numpy=True)
+                    vector_it = self.model.encode(it, convert_to_numpy=True)
+                    vector_eng = self.model.encode(eng, convert_to_numpy=True)
 
                     point = models.PointStruct(
                         id=point_id,
                         vector={
-                            "short_desc_ita": vector_short_it,
-                            "short_desc_eng": vector_short_eng,
-                            "long_desc_ita": vector_long_it,
-                            "long_desc_eng": vector_long_eng,
+                            "desc_ita": vector_it,
+                            "desc_eng": vector_eng,
                         },
                         payload={
                             "item_id": row['id'],
@@ -119,7 +120,7 @@ class Qwen(Retriever):
         # search in the vector database
         results = self.qdrant_client.search(
             collection_name="vector-database-qwen-"+str(self.size),
-            query_vector=models.NamedVector(name="long_desc_ita", vector=query_vector),
+            query_vector=models.NamedVector(name="desc_ita", vector=query_vector),
             limit=self.output_length
         )
 

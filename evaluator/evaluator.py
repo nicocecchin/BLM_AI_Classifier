@@ -19,6 +19,7 @@ from retrievers.Nomic import Nomic
 from retrievers.Ollama import Ollama
 from retrievers.Random import Random
 from retrievers.Fuzzy import Fuzzy
+from retrievers.HybridRetriever import HybridRetriever
 
 def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
     if model_name == 'bm25':
@@ -53,6 +54,16 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return Fuzzy(data_source=catalogue, output_length=output_length, method='token_sort_ratio')
     elif model_name == 'fuzzy_set_ratio':
         return Fuzzy(data_source=catalogue, output_length=output_length, method='token_set_ratio')
+    elif model_name == 'hybrid_sbert_1024_miniL6':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
+    elif model_name == 'hybrid_sbert_1024_bm25':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='bm25')
+    elif model_name == 'hybrid_sbert_1024_fuzzy':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='fuzzy', model_name='token_sort_ratio')
+    elif model_name == 'hybrid_bm25_miniL6':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='bm25', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
+    elif model_name == 'hybrid_sbert_1024_miniL6':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
     else:
         raise ValueError(f"Unknown model: {model_name}")
     

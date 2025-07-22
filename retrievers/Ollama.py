@@ -29,10 +29,8 @@ class Ollama(Retriever):
             self.qdrant_client.recreate_collection(
                 collection_name="vector-database-lama",
                 vectors_config={
-                    "short_desc_ita": models.VectorParams(size=4096, distance=models.Distance.COSINE),
-                    "short_desc_eng": models.VectorParams(size=4096, distance=models.Distance.COSINE),
-                    "long_desc_ita": models.VectorParams(size=4096, distance=models.Distance.COSINE),
-                    "long_desc_eng": models.VectorParams(size=4096, distance=models.Distance.COSINE),
+                    "desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
+                    "desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
                 }
             )
 
@@ -42,6 +40,8 @@ class Ollama(Retriever):
             catalogue_items_short_eng:List[str] = []
             catalogue_items_long_it:List[str] = []
             catalogue_items_long_eng:List[str] = []
+            catalogue_items_it:List[str] = []
+            catalogue_items_eng:List[str] = []
             with open(self.data_source, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f, delimiter=',')
                 for row in reader:
@@ -50,6 +50,13 @@ class Ollama(Retriever):
                     short_eng = row.get('short_eng', '').strip()
                     long_it = row.get('long_it', '').strip()
                     long_eng = row.get('long_eng', '').strip()
+
+                    it = "corta: " + short_it 
+                    if long_it:
+                        it += f" | lunga: {long_it}"
+                    eng = "short: " + short_eng
+                    if long_eng:
+                        eng += f" | long: {long_eng}"
 
                     # use short description if long is empty
                     if not long_it:
@@ -62,16 +69,16 @@ class Ollama(Retriever):
                     catalogue_items_long_it.append(long_it)
                     catalogue_items_long_eng.append(long_eng)
                     catalogue_items_ids.append(row['id'])
+                    catalogue_items_it.append(it)
+                    catalogue_items_eng.append(eng)
                     
 
             # create vector embeddings
-            catalogue_items_short_it_vectors = self.model.get_text_embedding_batch(catalogue_items_short_it, show_progress=True)
-            catalogue_items_short_eng_vectors = self.model.get_text_embedding_batch(catalogue_items_short_eng, show_progress=True)
-            catalogue_items_long_it_vectors = self.model.get_text_embedding_batch(catalogue_items_long_it, show_progress=True)
-            catalogue_items_long_eng_vectors = self.model.get_text_embedding_batch(catalogue_items_long_eng, show_progress=True)
+            catalogue_items_it_vectors = self.model.get_text_embedding_batch(catalogue_items_it, show_progress=True)
+            catalogue_items_eng_vectors = self.model.get_text_embedding_batch(catalogue_items_eng, show_progress=True)
 
-            assert len(catalogue_items_short_it_vectors) == len(catalogue_items_short_eng_vectors) == len(catalogue_items_long_it_vectors) == len(catalogue_items_long_eng_vectors), "Vectors length mismatch"
-            assert len(catalogue_items_short_it_vectors) == len(catalogue_items_short_it) == len(catalogue_items_ids), "Vectors and items length mismatch"
+            assert len(catalogue_items_it_vectors) == len(catalogue_items_eng_vectors), "Vectors length mismatch"
+            assert len(catalogue_items_it_vectors) == len(catalogue_items_it) == len(catalogue_items_ids), "Vectors and items length mismatch"
 
             # populate the vector database with items from the catalogue
             points = []
@@ -81,10 +88,8 @@ class Ollama(Retriever):
                 point = models.PointStruct(
                     id=point_id,
                     vector={
-                        "short_desc_ita": catalogue_items_short_it_vectors[i],
-                        "short_desc_eng": catalogue_items_short_eng_vectors[i],
-                        "long_desc_ita": catalogue_items_long_it_vectors[i],
-                        "long_desc_eng": catalogue_items_long_eng_vectors[i],
+                        "desc_ita": catalogue_items_it_vectors[i],
+                        "desc_eng": catalogue_items_eng_vectors[i],
                     },
                     payload={
                         "item_id": catalogue_items_ids[i],
@@ -122,7 +127,7 @@ class Ollama(Retriever):
         # search in the vector database
         results = self.qdrant_client.search(
             collection_name="vector-database-lama",
-            query_vector=models.NamedVector(name="long_desc_ita", vector=query_vector),
+            query_vector=models.NamedVector(name="desc_ita", vector=query_vector),
             limit=self.output_length
         )
 

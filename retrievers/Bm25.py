@@ -35,7 +35,6 @@ class Bm25(Retriever):
 
             # populate SQL database with items from the catalogue
             with open (self.data_source) as file:
-                # reader = csv.reader(file, delimiter=';')
                 reader = csv.reader(file, delimiter=',')
                 next(reader)
                 for row in reader:
@@ -85,6 +84,8 @@ class Bm25(Retriever):
                             item_id=d[0],
                             ita_short_desc=self.Material.query.filter_by(id=d[0]).first().short_desc_it,
                             eng_short_desc=self.Material.query.filter_by(id=d[0]).first().short_desc_eng,
+                            ita_long_desc=self.Material.query.filter_by(id=d[0]).first().long_desc_it,
+                            eng_long_desc=self.Material.query.filter_by(id=d[0]).first().long_desc_eng
                         )
                         output.append((item, scores[0][i]))
                         seen.add(d[0])
