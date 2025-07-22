@@ -52,7 +52,7 @@ class Bge(Retriever):
             with open(self.data_source, 'r', encoding='utf-8') as f:
                 row_count = sum(1 for _ in f) - 1
             with open(self.data_source, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f, delimiter=';')
+                reader = csv.DictReader(f, delimiter=',')
                 for row in tqdm(reader, total=row_count, desc="Populating vector database"):
                     # prepare texts
                     short_it = row.get('short_it', '').strip()

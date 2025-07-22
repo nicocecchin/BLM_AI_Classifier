@@ -41,7 +41,7 @@ class Fuzzy(Retriever):
 
             # populate SQL database with items from the catalogue
             with open (self.data_source) as file:
-                reader = csv.reader(file, delimiter=';')
+                reader = csv.reader(file, delimiter=',')
                 next(reader)
                 for row in reader:
                     material = self.Material(

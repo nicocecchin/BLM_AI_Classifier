@@ -24,8 +24,6 @@ class Sbert(Retriever):
         # init model
         if self.size == 512:
             self.model = SentenceTransformer('distiluse-base-multilingual-cased-v2', device=device)
-        elif self.size == 768:
-            self.model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2', device=device)
         elif self.size == 1024:
             self.model = SentenceTransformer('intfloat/multilingual-e5-large', device=device)
         else:
@@ -52,7 +50,7 @@ class Sbert(Retriever):
             with open(self.data_source, 'r', encoding='utf-8') as f:
                 row_count = sum(1 for _ in f) - 1
             with open(self.data_source, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f, delimiter=';')
+                reader = csv.DictReader(f, delimiter=',')
                 for row in tqdm(reader, total=row_count, desc="Populating vector database"):
                     # prepare texts
                     short_it = row.get('short_it', '').strip()

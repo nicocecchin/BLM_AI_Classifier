@@ -43,7 +43,7 @@ class Ollama(Retriever):
             catalogue_items_long_it:List[str] = []
             catalogue_items_long_eng:List[str] = []
             with open(self.data_source, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f, delimiter=';')
+                reader = csv.DictReader(f, delimiter=',')
                 for row in reader:
                     # prepare texts
                     short_it = row.get('short_it', '').strip()
