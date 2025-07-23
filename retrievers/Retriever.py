@@ -2,14 +2,28 @@ from typing import Dict, List, Set, Tuple
 from retrievers.Item import Item
 import os
 import argparse
+from langdetect import detect
 
 class Retriever:
     def __init__(self, data_source: str, output_length: int):
         self.data_source = data_source
         self.output_length = output_length
 
-    def retrieve(self, query:str) -> Tuple[List[Tuple[Item, float]], float]:
-        pass
+    def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
+        self.language = language
+        if not self.language:
+            # detect the language of the query
+            try:
+                self.language = detect(query)
+                if self.language not in ['it', 'en']:
+                    raise ValueError(f"Unsupported language detected: {self.language}. Supported languages are 'it' and 'en'.")
+                elif self.language == 'it':
+                    self.language = 'ita'
+                elif self.language == 'en':
+                    self.language = 'eng'
+            except Exception as e:
+                print(f"Error detecting language: {e}")
+                self.language = 'ita'
     
 def read_arguments():
     parser = argparse.ArgumentParser(description="Python class that retrieves data based on a user query.")

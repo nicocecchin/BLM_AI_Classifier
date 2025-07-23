@@ -11,7 +11,7 @@ import torch
 class Sbert(Retriever):
     def __init__(self, data_source: str, output_length: int, size: int):
         super().__init__(data_source, output_length)
-        
+
         if torch.cuda.is_available():
             device = "cuda"
         elif torch.backends.mps.is_available():
@@ -51,39 +51,39 @@ class Sbert(Retriever):
                 reader = csv.DictReader(f, delimiter=',')
                 for row in tqdm(reader, total=row_count, desc="Populating vector database"):
                     # prepare texts
-                    short_it = row.get('short_it', '').strip()
+                    short_ita = row.get('short_ita', '').strip()
                     short_eng = row.get('short_eng', '').strip()
-                    long_it = row.get('long_it', '').strip()
+                    long_ita = row.get('long_ita', '').strip()
                     long_eng = row.get('long_eng', '').strip()
 
-                    it = "corta: " + short_it 
-                    if long_it:
-                        it += f" | lunga: {long_it}"
-                    eng = "short: " + short_eng
+                    it = "descrizione corta: " + short_ita 
+                    if long_ita:
+                        it += f" | descrizione lunga: {long_ita}"
+                    eng = "short description: " + short_eng
                     if long_eng:
-                        eng += f" | long: {long_eng}"
+                        eng += f" | long description: {long_eng}"
 
                     # use short description if long is empty
-                    if not long_it:
-                        long_it = short_it
+                    if not long_ita:
+                        long_ita = short_ita
                     if not long_eng:
                         long_eng = short_eng
 
                     # create vectors
-                    vector_it = self.model.encode(it, convert_to_numpy=True)
+                    vector_ita = self.model.encode(it, convert_to_numpy=True)
                     vector_eng = self.model.encode(eng, convert_to_numpy=True)
 
                     point = models.PointStruct(
                         id=point_id,
                         vector={
-                            "desc_ita": vector_it,
+                            "desc_ita": vector_ita,
                             "desc_eng": vector_eng,
                         },
                         payload={
                             "item_id": row['id'],
-                            "short_it": short_it,
+                            "short_ita": short_ita,
                             "short_eng": short_eng,
-                            "long_it": long_it,
+                            "long_ita": long_ita,
                             "long_eng": long_eng
                         }
                     )
@@ -106,8 +106,9 @@ class Sbert(Retriever):
         info = self.qdrant_client.get_collection("vector-database-"+str(self.size))
         print(f"Vector database ready. Points: {info.points_count}")
 
-    def retrieve(self, query:str) -> Tuple[List[Tuple[Item, float]], float]:
+    def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
         start = time.time()
+        super().retrieve(query, language=language)
 
         # encode the query
         query_vector = self.model.encode(query.lower(), convert_to_numpy=True)
@@ -115,7 +116,7 @@ class Sbert(Retriever):
         # search in the vector database
         results = self.qdrant_client.search(
             collection_name="vector-database-"+str(self.size),
-            query_vector=models.NamedVector(name="desc_ita", vector=query_vector),
+            query_vector=models.NamedVector(name=f"desc_{self.language}", vector=query_vector),
             limit=self.output_length
         )
 
@@ -125,9 +126,9 @@ class Sbert(Retriever):
             score = result.score
 
             item = Item(item_id=item_id, 
-                        ita_short_desc=result.payload["short_it"],
+                        ita_short_desc=result.payload["short_ita"],
                         eng_short_desc=result.payload["short_eng"],
-                        ita_long_desc=result.payload["long_it"],
+                        ita_long_desc=result.payload["long_ita"],
                         eng_long_desc=result.payload["long_eng"])
             items.append((item, score))
 

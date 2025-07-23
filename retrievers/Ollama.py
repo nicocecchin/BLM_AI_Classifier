@@ -12,7 +12,7 @@ import ollama
 class Ollama(Retriever):
     def __init__(self, data_source: str, output_length: int):
         super().__init__(data_source, output_length)
-        
+
         if torch.cuda.is_available():
             device = "cuda"
         elif torch.backends.mps.is_available():
@@ -36,66 +36,66 @@ class Ollama(Retriever):
 
             # retrive all items from the catalogue
             catalogue_items_ids:List[int] = []
-            catalogue_items_short_it:List[str] = []
+            catalogue_items_short_ita:List[str] = []
             catalogue_items_short_eng:List[str] = []
-            catalogue_items_long_it:List[str] = []
+            catalogue_items_long_ita:List[str] = []
             catalogue_items_long_eng:List[str] = []
-            catalogue_items_it:List[str] = []
+            catalogue_items_ita:List[str] = []
             catalogue_items_eng:List[str] = []
             with open(self.data_source, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f, delimiter=',')
                 for row in reader:
                     # prepare texts
-                    short_it = row.get('short_it', '').strip()
+                    short_ita = row.get('short_ita', '').strip()
                     short_eng = row.get('short_eng', '').strip()
-                    long_it = row.get('long_it', '').strip()
+                    long_ita = row.get('long_ita', '').strip()
                     long_eng = row.get('long_eng', '').strip()
 
-                    it = "corta: " + short_it 
-                    if long_it:
-                        it += f" | lunga: {long_it}"
+                    ita = "corta: " + short_ita 
+                    if long_ita:
+                        ita += f" | lunga: {long_ita}"
                     eng = "short: " + short_eng
                     if long_eng:
                         eng += f" | long: {long_eng}"
 
                     # use short description if long is empty
-                    if not long_it:
-                        long_it = short_it
+                    if not long_ita:
+                        long_ita = short_ita
                     if not long_eng:
                         long_eng = short_eng
 
-                    catalogue_items_short_it.append(short_it)
+                    catalogue_items_short_ita.append(short_ita)
                     catalogue_items_short_eng.append(short_eng)
-                    catalogue_items_long_it.append(long_it)
+                    catalogue_items_long_ita.append(long_ita)
                     catalogue_items_long_eng.append(long_eng)
                     catalogue_items_ids.append(row['id'])
-                    catalogue_items_it.append(it)
+                    catalogue_items_ita.append(ita)
                     catalogue_items_eng.append(eng)
                     
 
             # create vector embeddings
-            catalogue_items_it_vectors = self.model.get_text_embedding_batch(catalogue_items_it, show_progress=True)
+            catalogue_items_ita_vectors = self.model.get_text_embedding_batch(catalogue_items_ita, show_progress=True)
             catalogue_items_eng_vectors = self.model.get_text_embedding_batch(catalogue_items_eng, show_progress=True)
 
-            assert len(catalogue_items_it_vectors) == len(catalogue_items_eng_vectors), "Vectors length mismatch"
-            assert len(catalogue_items_it_vectors) == len(catalogue_items_it) == len(catalogue_items_ids), "Vectors and items length mismatch"
+            assert len(catalogue_items_ita_vectors) == len(catalogue_items_eng_vectors), "Vectors length mismatch"
+            assert len(catalogue_items_ita_vectors) == len(catalogue_items_ita) == len(catalogue_items_ids), "Vectors and items length mismatch"
 
             # populate the vector database with items from the catalogue
             points = []
             point_id = 1
             # read CSV and count rows for progress bar
-            for i in tqdm(range(len(catalogue_items_short_it)), desc="Populating vector database"):
+            for i in tqdm(range(len(catalogue_items_short_ita)), desc="Populating vector database"):
                 point = models.PointStruct(
                     id=point_id,
                     vector={
-                        "desc_ita": catalogue_items_it_vectors[i],
+                        "desc_ita": catalogue_items_ita_vectors[i],
                         "desc_eng": catalogue_items_eng_vectors[i],
                     },
                     payload={
                         "item_id": catalogue_items_ids[i],
-                        "short_it": catalogue_items_short_it[i],
+                        "short_ita": catalogue_items_short_ita[i],
                         "short_eng": catalogue_items_short_eng[i],
-                        "long_it": catalogue_items_long_it[i],
+                        "long_ita": catalogue_items_long_ita[i],
                         "long_eng": catalogue_items_long_eng[i]
                     }
                 )
@@ -118,8 +118,9 @@ class Ollama(Retriever):
         info = self.qdrant_client.get_collection("vector-database-lama")
         print(f"Vector database ready. Points: {info.points_count}")
 
-    def retrieve(self, query:str) -> Tuple[List[Tuple[Item, float]], float]:
+    def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
         start = time.time()
+        super().retrieve(query, language=language)
 
         # encode the query
         query_vector = self.model.get_query_embedding(query.lower())
@@ -127,7 +128,7 @@ class Ollama(Retriever):
         # search in the vector database
         results = self.qdrant_client.search(
             collection_name="vector-database-lama",
-            query_vector=models.NamedVector(name="desc_ita", vector=query_vector),
+            query_vector=models.NamedVector(name=f"desc_{self.language}", vector=query_vector),
             limit=self.output_length
         )
 
@@ -137,9 +138,9 @@ class Ollama(Retriever):
             score = result.score
 
             item = Item(item_id=item_id, 
-                        ita_short_desc=result.payload["short_it"],
+                        ita_short_desc=result.payload["short_ita"],
                         eng_short_desc=result.payload["short_eng"],
-                        ita_long_desc=result.payload["long_it"],
+                        ita_long_desc=result.payload["long_ita"],
                         eng_long_desc=result.payload["long_eng"])
             items.append((item, score))
 

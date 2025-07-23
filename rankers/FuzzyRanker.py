@@ -15,14 +15,14 @@ class FuzzyRanker(Ranker):
     def rank(self, documents: List[Tuple[Item, float]], query: str) -> List[Tuple[Item, float]]:
         docs = []
         for item, _ in documents:
-            desc_it = f"{item.ita_short_desc}"
+            desc_ita = f"{item.ita_short_desc}"
             if item.ita_long_desc:
-                desc_it += f" {item.ita_long_desc}"
+                desc_ita += f" {item.ita_long_desc}"
             desc_eng = f"{item.eng_short_desc}"
             if item.eng_long_desc:
                 desc_eng += f" {item.eng_long_desc}"
 
-            docs.append((item.item_id, desc_it, ''))
+            docs.append((item.item_id, desc_ita, ''))
             docs.append((item.item_id, desc_eng, ''))
         
         corpus = [doc[1].lower() for doc in docs]

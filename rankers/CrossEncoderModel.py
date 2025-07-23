@@ -32,18 +32,18 @@ class CrossEncoderModel(Ranker):
         # Extract the document texts and their corresponding scores
         results = []
         for item, _ in documents:
-            desc_it = f"corta: {item.ita_short_desc}"
+            desc_ita = f"corta: {item.ita_short_desc}"
             if item.ita_long_desc:
-                desc_it += f" | lunga: {item.ita_long_desc}"
+                desc_ita += f" | lunga: {item.ita_long_desc}"
             desc_eng = f"short: {item.eng_short_desc}"
             if item.eng_long_desc:
                 desc_eng += f" | long: {item.eng_long_desc}"
 
             # Compare query with Italian and English descriptions
-            score_it = self.model.predict([(query, desc_it)])[0]
+            score_ita = self.model.predict([(query, desc_ita)])[0]
             score_eng = self.model.predict([(query, desc_eng)])[0]
-            if score_it >= score_eng:
-                results.append((item, score_it))
+            if score_ita >= score_eng:
+                results.append((item, score_ita))
             else:
                 results.append((item, score_eng))
 

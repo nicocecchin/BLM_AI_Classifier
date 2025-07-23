@@ -47,10 +47,10 @@ class HybridRetriever(Retriever):
             raise ValueError(f"Unknown ranker: {ranker_name}")
 
 
-    def retrieve(self, query) -> Tuple[List[Tuple[Item, float]], float]:
+    def retrieve(self, query, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
         start = time.time()
 
-        documents, _ = self.retriever.retrieve(query)
+        documents, _ = self.retriever.retrieve(query, language=language)
 
         if not documents:
             return [], time.time() - start

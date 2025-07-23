@@ -12,14 +12,14 @@ sys.path.insert(0, project_root)
 from retrievers.Retriever import Retriever
 from retrievers.Bm25 import Bm25
 from retrievers.Sbert import Sbert
-# from retrievers.Qwen import QwenF
-# from retrievers.BGE import Bge
-# from retrievers.Gte import Gte
-# from retrievers.Nomic import Nomic
-# from retrievers.Ollama import Ollama
-# from retrievers.Random import Random
-# from retrievers.Fuzzy import Fuzzy
-# from retrievers.HybridRetriever import HybridRetriever
+from retrievers.Qwen import Qwen
+from retrievers.BGE import Bge
+from retrievers.Gte import Gte
+from retrievers.Nomic import Nomic
+from retrievers.Ollama import Ollama
+from retrievers.Random import Random
+from retrievers.Fuzzy import Fuzzy
+from retrievers.HybridRetriever import HybridRetriever
 
 def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
     if model_name == 'bm25':
@@ -30,40 +30,40 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return Sbert(data_source=catalogue, output_length=output_length, size=768)
     elif model_name == 'sbert_1024':
         return Sbert(data_source=catalogue, output_length=output_length, size=1024)
-    # elif model_name == 'qwen_1024':
-    #     return Qwen(data_source=catalogue, output_length=output_length, size=1024)
-    # elif model_name == 'qwen_2560':
-    #     return Qwen(data_source=catalogue, output_length=output_length, size=2560)
-    # elif model_name == 'qwen_4096':
-    #     return Qwen(data_source=catalogue, output_length=output_length, size=4096)
-    # elif model_name == 'bge_dense':
-    #     return Bge(data_source=catalogue, output_length=output_length, return_dense=True, return_sparse=False)
-    # elif model_name == 'bge_sparse':
-    #     return Bge(data_source=catalogue, output_length=output_length, return_dense=False, return_sparse=True)
-    # elif model_name == 'gte':
-    #     return Gte(data_source=catalogue, output_length=output_length)
-    # elif model_name == 'nomic':
-    #     return Nomic(data_source=catalogue, output_length=output_length)
-    # elif model_name == 'lama':
-    #     return Ollama(data_source=catalogue, output_length=output_length)
-    # elif model_name == 'random':
-    #     return Random(data_source=catalogue, output_length=output_length, random_seed=123)
-    # elif model_name == 'fuzzy_ratio':
-    #     return Fuzzy(data_source=catalogue, output_length=output_length, method='ratio')
-    # elif model_name == 'fuzzy_sort_ratio':
-    #     return Fuzzy(data_source=catalogue, output_length=output_length, method='token_sort_ratio')
-    # elif model_name == 'fuzzy_set_ratio':
-    #     return Fuzzy(data_source=catalogue, output_length=output_length, method='token_set_ratio')
-    # elif model_name == 'hybrid_sbert_1024_miniL6':
-    #     return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
-    # elif model_name == 'hybrid_sbert_1024_bm25':
-    #     return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='bm25')
-    # elif model_name == 'hybrid_sbert_1024_fuzzy':
-    #     return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='fuzzy', model_name='token_sort_ratio')
-    # elif model_name == 'hybrid_bm25_miniL6':
-    #     return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='bm25', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
-    # elif model_name == 'hybrid_sbert_1024_miniL6':
-    #     return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
+    elif model_name == 'qwen_1024':
+        return Qwen(data_source=catalogue, output_length=output_length, size=1024)
+    elif model_name == 'qwen_2560':
+        return Qwen(data_source=catalogue, output_length=output_length, size=2560)
+    elif model_name == 'qwen_4096':
+        return Qwen(data_source=catalogue, output_length=output_length, size=4096)
+    elif model_name == 'bge_dense':
+        return Bge(data_source=catalogue, output_length=output_length, return_dense=True, return_sparse=False)
+    elif model_name == 'bge_sparse':
+        return Bge(data_source=catalogue, output_length=output_length, return_dense=False, return_sparse=True)
+    elif model_name == 'gte':
+        return Gte(data_source=catalogue, output_length=output_length)
+    elif model_name == 'nomic':
+        return Nomic(data_source=catalogue, output_length=output_length)
+    elif model_name == 'lama':
+        return Ollama(data_source=catalogue, output_length=output_length)
+    elif model_name == 'random':
+        return Random(data_source=catalogue, output_length=output_length, random_seed=123)
+    elif model_name == 'fuzzy_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='ratio')
+    elif model_name == 'fuzzy_sort_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='token_sort_ratio')
+    elif model_name == 'fuzzy_set_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='token_set_ratio')
+    elif model_name == 'hybrid_sbert_1024_miniL6':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
+    elif model_name == 'hybrid_sbert_1024_bm25':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='bm25')
+    elif model_name == 'hybrid_sbert_1024_fuzzy':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='fuzzy', model_name='token_sort_ratio')
+    elif model_name == 'hybrid_bm25_miniL6':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='bm25', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
+    elif model_name == 'hybrid_sbert_1024_miniL6':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
     else:
         raise ValueError(f"Unknown model: {model_name}")
 

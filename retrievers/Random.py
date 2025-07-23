@@ -6,8 +6,8 @@ import csv
 import random
 
 class Random(Retriever):
-    def __init__(self, data_source: str, output_length: int, random_seed: int):
-        super().__init__(data_source, output_length)
+    def __init__(self, data_source: str, output_length: int, random_seed: int, language: str = None):
+        super().__init__(data_source, output_length, language=language)
 
         # set the random seed for reproducibility
         self.rng = random.seed(random_seed)
@@ -19,9 +19,9 @@ class Random(Retriever):
             for row in reader:
                 item = Item(
                     item_id=row['id'],
-                    ita_short_desc=row['short_it'].strip(),
+                    ita_short_desc=row['short_ita'].strip(),
                     eng_short_desc=row['short_eng'].strip(),
-                    ita_long_desc=row['long_it'].strip() if row['long_it'] else None,
+                    ita_long_desc=row['long_ita'].strip() if row['long_ita'] else None,
                     eng_long_desc=row['long_eng'].strip() if row['long_eng'] else None
                 )
                 self.items.append(item)
