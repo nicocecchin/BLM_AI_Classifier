@@ -13,3 +13,4 @@ utils/
 evaluator/output/
 config/
 commands.sh
+log.txt
