@@ -25,27 +25,24 @@ class CrossEncoderModel(Ranker):
         else:
             raise ValueError(f"Unknown model name: {model_name}. Supported models are 'cross-encoder/ms-marco-MiniLM-L-6-v2' and 'cross-encoder/ms-marco-TinyBERT-L-2-v2'.")
 
-    def rank(self, documents: List[Tuple[Item, float]], query: str) -> List[Tuple[Item, float]]:
-        """
-        Rank documents based on the query using the cross-encoder model.
-        """
-        # Extract the document texts and their corresponding scores
+    def rank(self, documents: List[Tuple[Item, float]], query: str, language: str) -> List[Tuple[Item, float]]:
+        super().rank(documents, query, language)
+
         results = []
         for item, _ in documents:
-            desc_ita = f"corta: {item.ita_short_desc}"
-            if item.ita_long_desc:
-                desc_ita += f" | lunga: {item.ita_long_desc}"
-            desc_eng = f"short: {item.eng_short_desc}"
-            if item.eng_long_desc:
-                desc_eng += f" | long: {item.eng_long_desc}"
+            if self.language == 'ita':
+                desc = f"corta: {item.ita_short_desc}"
+                if item.ita_long_desc:
+                    desc += f" | lunga: {item.ita_long_desc}"
+            elif self.language == 'eng':
+                desc = f"short: {item.eng_short_desc}"
+                if item.eng_long_desc:
+                    desc += f" | long: {item.eng_long_desc}"
 
-            # Compare query with Italian and English descriptions
-            score_ita = self.model.predict([(query, desc_ita)])[0]
-            score_eng = self.model.predict([(query, desc_eng)])[0]
-            if score_ita >= score_eng:
-                results.append((item, score_ita))
-            else:
-                results.append((item, score_eng))
+            score = self.model.predict([(query, desc)])[0]
+
+            results.append((item, score))
+
 
         # Sort results by score in descending order
         results.sort(key=lambda x: x[1], reverse=True)

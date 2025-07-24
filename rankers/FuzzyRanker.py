@@ -12,26 +12,28 @@ class FuzzyRanker(Ranker):
             raise ValueError("Method must be one of 'token_sort_ratio', 'token_set_ratio', or 'ratio'.")
         self.method = method
 
-    def rank(self, documents: List[Tuple[Item, float]], query: str) -> List[Tuple[Item, float]]:
+    def rank(self, documents: List[Tuple[Item, float]], query: str, language: str) -> List[Tuple[Item, float]]:
+        super().rank(documents, query, language)
         docs = []
         for item, _ in documents:
-            desc_ita = f"{item.ita_short_desc}"
-            if item.ita_long_desc:
-                desc_ita += f" {item.ita_long_desc}"
-            desc_eng = f"{item.eng_short_desc}"
-            if item.eng_long_desc:
-                desc_eng += f" {item.eng_long_desc}"
+            if self.language == 'ita':
+                desc = f"corta: {item.ita_short_desc}"
+                if item.ita_long_desc:
+                    desc += f" | lunga: {item.ita_long_desc}"
+            elif self.language == 'eng':
+                desc = f"short: {item.eng_short_desc}"
+                if item.eng_long_desc:
+                    desc += f" | long: {item.eng_long_desc}"
 
-            docs.append((item.item_id, desc_ita, ''))
-            docs.append((item.item_id, desc_eng, ''))
+            docs.append((item.item_id, desc, ''))
         
         corpus = [doc[1].lower() for doc in docs]
         if self.method == 'token_sort_ratio':
-            retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_sort_ratio, limit=self.output_length*2)
+            retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_sort_ratio, limit=self.output_length)
         elif self.method == 'token_set_ratio':
-            retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_set_ratio, limit=self.output_length*2)
+            retriever = process.extract(query.lower(), corpus, scorer=fuzz.token_set_ratio, limit=self.output_length)
         elif self.method == 'ratio':
-            retriever = process.extract(query.lower(), corpus, scorer=fuzz.ratio, limit=self.output_length*2)
+            retriever = process.extract(query.lower(), corpus, scorer=fuzz.ratio, limit=self.output_length)
 
         output = []
         seen = set()

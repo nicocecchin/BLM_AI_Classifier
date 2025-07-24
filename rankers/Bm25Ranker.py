@@ -11,24 +11,27 @@ class Bm25Ranker(Ranker):
         
         
 
-    def rank(self, documents: List[Tuple[Item, float]], query: str) -> List[Tuple[Item, float]]:
+    def rank(self, documents: List[Tuple[Item, float]], query: str, language: str) -> List[Tuple[Item, float]]:
+        super().rank(documents, query, language)
+
         docs = []
         for item, _ in documents:
-            desc_ita = f"{item.ita_short_desc}"
-            if item.ita_long_desc:
-                desc_ita += f" {item.ita_long_desc}"
-            desc_eng = f"{item.eng_short_desc}"
-            if item.eng_long_desc:
-                desc_eng += f" {item.eng_long_desc}"
+            if self.language == 'ita':
+                desc = f"corta: {item.ita_short_desc}"
+                if item.ita_long_desc:
+                    desc += f" | lunga: {item.ita_long_desc}"
+            elif self.language == 'eng':
+                desc = f"short: {item.eng_short_desc}"
+                if item.eng_long_desc:
+                    desc += f" | long: {item.eng_long_desc}"
 
-            docs.append((item.item_id, desc_ita, ''))
-            docs.append((item.item_id, desc_eng, ''))
+            docs.append((item.item_id, desc, ''))
 
 
         corpus = [doc[1].lower() for doc in docs]
         retriever = bm25s.BM25(corpus=corpus)
         retriever.index(bm25s.tokenize(corpus), show_progress=False)
-        results, scores = retriever.retrieve(bm25s.tokenize(query.lower()), k=self.output_length*2, show_progress=False)
+        results, scores = retriever.retrieve(bm25s.tokenize(query.lower()), k=self.output_length, show_progress=False)
 
         # filter the results to return only unique materials
         # and limit the number of results to output_length

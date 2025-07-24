@@ -64,38 +64,49 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='bm25', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
     elif model_name == 'hybrid_sbert_1024_miniL6':
         return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
+    elif model_name == 'hybrid_sbert_1024_bge_m3':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='bge_m3')
+    elif model_name == 'hybrid_sbert_1024_bge_gemma':
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='bge_gemma')
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
-def compute_map_k(model: Retriever, dataset: pd.DataFrame, k: int, language: str = None) -> Tuple[float, float]:
-    scores = []
+def compute_map_k(model: Retriever, dataset: pd.DataFrame, language: str = None) -> Tuple[float, float, float]:
+    scores1 = []
+    scores10 = []
     times = []
 
-    for _, row in tqdm(dataset.iterrows(), total=len(dataset), desc=f"Computing MAP@{k}"):
+    for _, row in tqdm(dataset.iterrows(), total=len(dataset), desc=f"Computing MAP@1 and MAP@10"):
         query = row['query']
         positive_id = row['positive']
         results, retrive_time = model.retrieve(query=query, language=language)
         times.append(retrive_time)
 
-        ids = [item.item_id for item, _ in results[0:k]]
+        ids = [item.item_id for item, _ in results[0:10]]
+        if positive_id == ids[0]:
+            scores1.append(1.0)
+        else:
+            scores1.append(0.0)
+        
         if positive_id in ids:
             rank = ids.index(positive_id) + 1
-            scores.append(1.0 / rank)
+            scores10.append(1.0 / rank)
         else:
-            scores.append(0.0)
-        
-    map_k = sum(scores) / len(scores)
-    avg_time = sum(times) / len(times)
-    return {"score": map_k, 'avg_time': avg_time}
+            scores10.append(0.0)
 
-def evaluate_model_on_datasets(dataset_paths: List[str], dataset_name: str, catalogue_paths: List[str], model_name: str, k: int, language: str = None) -> List[Tuple[str, float, float]]:
+    map_1 = sum(scores1) / len(scores1) if scores1 else 0.0
+    map_10 = sum(scores10) / len(scores10) if scores10 else 0.0
+    avg_time = sum(times) / len(times)
+    return {"score_1": map_1, "score_10": map_10, 'avg_time': avg_time}
+
+def evaluate_model_on_datasets(dataset_paths: List[str], dataset_name: str, catalogue_paths: List[str], model_name: str, language: str = None) -> List[Tuple[str, float, float, float]]:
     results = []
     for dataset_path, catalogue_path in zip(dataset_paths, catalogue_paths):
         dataset = pd.read_csv(dataset_path, sep=',')
-        dataset = dataset.head(1000) # limit to 100 rows for testing
-        model = get_model(model_name, catalogue_path, k)
-        score_k_data = compute_map_k(model, dataset, k, language=language)
-        results.append((dataset_name, score_k_data['score'], score_k_data['avg_time']))
+        dataset = dataset.head(100) # limit to 100 rows for testing
+        model = get_model(model_name, catalogue_path, 10)
+        score_data = compute_map_k(model, dataset, language=language)
+        results.append((dataset_name, score_data['score_1'], score_data['score_10'], score_data['avg_time']))
     return results
 
 def read_arguments():
@@ -105,8 +116,7 @@ def read_arguments():
     parser.add_argument('--dataset_name', type=str, required=True, help='Name of the dataset.')
     parser.add_argument('--catalogue', type=str, required=True, help='Path of the catalogue.')
     parser.add_argument('--output_folder', type=str, required=True, help='Output folder')
-    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_768', 'sbert_1024', 'qwen_1024', 'qwen_2560', 'qwen_4096', 'bge_dense', 'bge_sparse', 'gte', 'nomic', 'lama', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio'], help='Algorithm model to use for retrieval.')
-    # parser.add_argument('--k', type=int, help='MAP@k metric, number of results to consider for the Medium Average Precision (MAP) calculation.')
+    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_768', 'sbert_1024', 'qwen_1024', 'qwen_2560', 'qwen_4096', 'bge_dense', 'bge_sparse', 'gte', 'nomic', 'lama', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio', 'hybrid_sbert_1024_bge_m3', 'hybrid_sbert_1024_bge_gemma'], help='Algorithm model to use for retrieval.')
     parser.add_argument('--language', type=str, default=None, help='Language of the dataset (optional,).', choices=['ita', 'eng'])
 
     args = parser.parse_args()
@@ -122,7 +132,6 @@ if __name__ == '__main__':
     output_folder = f"{args['output_folder']}/{current_datetime}"
     catalogue_path = args['catalogue']
     model = args['model']
-    # k = args['k']
     language = args['language']
 
     os.makedirs(output_folder, exist_ok=True)
@@ -131,36 +140,25 @@ if __name__ == '__main__':
         dataset_name=dataset_name,
         catalogue_paths=[catalogue_path],
         model_name=model,
-        k=1,
         language=language
     )
 
     # print the results
-    for dataset, mapk, avg_time in results:
-        print(f"Dataset: {dataset}, MAP@{1}: {mapk:.4f}, Avg Time: {avg_time:.4f} seconds")
+    for dataset, map1, map10, avg_time in results:
+        print(f"Dataset: {dataset}, MAP@{1}: {map1:.4f}, MAP@{10}: {map10:.4f}, Avg Time: {avg_time:.4f} seconds")
 
-    # save the results to a CSV file
-    output_file = os.path.join(output_folder, f"results_{model}_k_{1}.csv")
-    results_df = pd.DataFrame(results, columns=['Dataset', f'MAP@{1}', 'Avg Time (seconds)'])
-    results_df.to_csv(output_file, index=False)
-
-
-
-    results = evaluate_model_on_datasets(
-        dataset_paths=[dataset_path],
-        dataset_name=dataset_name,
-        catalogue_paths=[catalogue_path],
-        model_name=model,
-        k=10,
-        language=language
+    # Save MAP@1 results: Dataset, MAP@1, Avg Time (seconds)
+    output_file_map1 = os.path.join(output_folder, f"results_{model}_k_1.csv")
+    results_df_map1 = pd.DataFrame(
+        [(dataset, map1, avg_time) for dataset, map1, _, avg_time in results],
+        columns=['Dataset', 'MAP@1', 'Avg Time (seconds)']
     )
+    results_df_map1.to_csv(output_file_map1, index=False)
 
-    # print the results
-    for dataset, mapk, avg_time in results:
-        print(f"Dataset: {dataset}, MAP@{10}: {mapk:.4f}, Avg Time: {avg_time:.4f} seconds")
-
-    # save the results to a CSV file
-    output_file = os.path.join(output_folder, f"results_{model}_k_{10}.csv")
-    results_df = pd.DataFrame(results, columns=['Dataset', f'MAP@{10}', 'Avg Time (seconds)'])
-    results_df.to_csv(output_file, index=False)
-    print(f"Evaluation completed. Output saved in {output_folder}.")
+    # Save MAP@10 results: Dataset, MAP@10, Avg Time (seconds)
+    output_file_map10 = os.path.join(output_folder, f"results_{model}_k_10.csv")
+    results_df_map10 = pd.DataFrame(
+        [(dataset, map10, avg_time) for dataset, _, map10, avg_time in results],
+        columns=['Dataset', 'MAP@10', 'Avg Time (seconds)']
+    )
+    results_df_map10.to_csv(output_file_map10, index=False)

@@ -12,6 +12,7 @@ from typing import List, Tuple
 from retrievers.Item import Item
 # from retrievers.Ollama import Ollama
 from rankers.CrossEncoderModel import CrossEncoderModel
+from rankers.BGEReranker import BGEReranker
 import time
 
 import pandas as pd
@@ -43,6 +44,10 @@ class HybridRetriever(Retriever):
             self.ranker = FuzzyRanker(self.output_length, method=model_name)
         elif ranker_name == "bm25":
             self.ranker = Bm25Ranker(self.output_length)
+        elif ranker_name == "bge_m3":
+            self.ranker = BGEReranker(self.output_length, model_name=ranker_name)
+        elif ranker_name == "bge_gemma":
+            self.ranker = BGEReranker(self.output_length, model_name=ranker_name)
         else:
             raise ValueError(f"Unknown ranker: {ranker_name}")
 
@@ -55,7 +60,7 @@ class HybridRetriever(Retriever):
         if not documents:
             return [], time.time() - start
 
-        ranked_documents = self.ranker.rank(documents, query)
+        ranked_documents = self.ranker.rank(documents, query, language=language)
 
         return ranked_documents[0:10], time.time() - start
 
