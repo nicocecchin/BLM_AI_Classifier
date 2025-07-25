@@ -72,8 +72,8 @@ class Bge(Retriever):
                         long_eng = short_eng
 
                     # create vectors
-                    vector_ita = self.model.encode(it, convert_to_numpy=True)
-                    vector_eng = self.model.encode(eng, convert_to_numpy=True)
+                    vector_ita = self.model.encode([it], convert_to_numpy=True)[self.mode][0]
+                    vector_eng = self.model.encode([eng], convert_to_numpy=True)[self.mode][0]
 
                     point = models.PointStruct(
                         id=point_id,

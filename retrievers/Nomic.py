@@ -28,8 +28,8 @@ class Nomic(Retriever):
             self.qdrant_client.recreate_collection(
                 collection_name=f"vector-database-{self.catalogue_name}-nomic",
                 vectors_config={
-                    "desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
-                    "desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
+                    "desc_ita": models.VectorParams(size=768, distance=models.Distance.COSINE),
+                    "desc_eng": models.VectorParams(size=768, distance=models.Distance.COSINE),
                 }
             )
 
