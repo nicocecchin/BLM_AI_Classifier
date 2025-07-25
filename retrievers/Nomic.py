@@ -68,7 +68,7 @@ class Nomic(Retriever):
                     point = models.PointStruct(
                         id=point_id,
                         vector={
-                            "desc_itaa": vector_ita,
+                            "desc_ita": vector_ita,
                             "desc_eng": vector_eng,
                         },
                         payload={
