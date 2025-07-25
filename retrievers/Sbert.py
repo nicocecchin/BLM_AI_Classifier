@@ -32,9 +32,9 @@ class Sbert(Retriever):
         # create qdrant client and database
         #self.qdrant_client = QdrantClient(":memory:")
         self.qdrant_client = QdrantClient(host="localhost", port=6333)
-        if not self.qdrant_client.collection_exists(collection_name="vector-database-"+str(self.size)):
+        if not self.qdrant_client.collection_exists(collection_name="vector-database-"+self.catalogue_name+"-sbert-"+str(self.size)):
             self.qdrant_client.recreate_collection(
-                collection_name="vector-database-"+str(self.size),
+                collection_name="vector-database-"+self.catalogue_name+"-sbert-"+str(self.size),
                 vectors_config={
                     "desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
                     "desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
@@ -56,12 +56,12 @@ class Sbert(Retriever):
                     long_ita = row.get('long_ita', '').strip()
                     long_eng = row.get('long_eng', '').strip()
 
-                    it = "descrizione corta: " + short_ita 
+                    it = "corta: " + short_ita 
                     if long_ita:
-                        it += f" | descrizione lunga: {long_ita}"
-                    eng = "short description: " + short_eng
+                        it += f" | lunga: {long_ita}"
+                    eng = "short: " + short_eng
                     if long_eng:
-                        eng += f" | long description: {long_eng}"
+                        eng += f" | long: {long_eng}"
 
                     # use short description if long is empty
                     if not long_ita:
@@ -91,7 +91,7 @@ class Sbert(Retriever):
                     point_id += 1
                     if len(points) >= 100:  # upload points in batches of 100
                         self.qdrant_client.upsert(
-                            collection_name="vector-database-"+str(self.size),
+                            collection_name="vector-database-"+self.catalogue_name+"-sbert-"+str(self.size),
                             points=points
                         )
                         points = []
@@ -99,11 +99,11 @@ class Sbert(Retriever):
             # upload points to the vector database
             if points:
                 self.qdrant_client.upsert(
-                    collection_name="vector-database-"+str(self.size),
+                    collection_name="vector-database-"+self.catalogue_name+"-sbert-"+str(self.size),
                     points=points
                 )
-            
-        info = self.qdrant_client.get_collection("vector-database-"+str(self.size))
+
+        info = self.qdrant_client.get_collection("vector-database-"+self.catalogue_name+"-sbert-"+str(self.size))
         print(f"Vector database ready. Points: {info.points_count}")
 
     def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
@@ -115,7 +115,7 @@ class Sbert(Retriever):
 
         # search in the vector database
         results = self.qdrant_client.search(
-            collection_name="vector-database-"+str(self.size),
+            collection_name="vector-database-"+self.catalogue_name+"-sbert-"+str(self.size),
             query_vector=models.NamedVector(name=f"desc_{self.language}", vector=query_vector),
             limit=self.output_length
         )

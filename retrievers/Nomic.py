@@ -24,9 +24,9 @@ class Nomic(Retriever):
         # create qdrant client and database
         #self.qdrant_client = QdrantClient(":memory:")
         self.qdrant_client = QdrantClient(host="localhost", port=6333)
-        if not self.qdrant_client.collection_exists(collection_name="vector-database-nomic"):
+        if not self.qdrant_client.collection_exists(collection_name=f"vector-database-{self.catalogue_name}-nomic"):
             self.qdrant_client.recreate_collection(
-                collection_name="vector-database-nomic",
+                collection_name=f"vector-database-{self.catalogue_name}-nomic",
                 vectors_config={
                     "desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
                     "desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
@@ -83,7 +83,7 @@ class Nomic(Retriever):
                     point_id += 1
                     if len(points) >= 100:  # upload points in batches of 100
                         self.qdrant_client.upsert(
-                            collection_name="vector-database-nomic",
+                            collection_name=f"vector-database-{self.catalogue_name}-nomic",
                             points=points
                         )
                         points = []
@@ -91,11 +91,11 @@ class Nomic(Retriever):
             # upload points to the vector database
             if points:
                 self.qdrant_client.upsert(
-                    collection_name="vector-database-nomic",
+                    collection_name=f"vector-database-{self.catalogue_name}-nomic",
                     points=points
                 )
-            
-        info = self.qdrant_client.get_collection("vector-database-nomic")
+
+        info = self.qdrant_client.get_collection(f"vector-database-{self.catalogue_name}-nomic")
         print(f"Vector database ready. Points: {info.points_count}")
 
     def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
@@ -107,7 +107,7 @@ class Nomic(Retriever):
 
         # search in the vector database
         results = self.qdrant_client.search(
-            collection_name="vector-database-nomic",
+            collection_name=f"vector-database-{self.catalogue_name}-nomic",
             query_vector=models.NamedVector(name=f"desc_{self.language}", vector=query_vector),
             limit=self.output_length
         )

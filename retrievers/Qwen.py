@@ -36,9 +36,9 @@ class Qwen(Retriever):
         timeout = None if self.size != 4096 else 60.0  # adjust timeout based on model size
         print(f"Using timeout: {timeout} seconds for model size {self.size}")
         self.qdrant_client = QdrantClient(host="localhost", port=6333, timeout=timeout)
-        if not self.qdrant_client.collection_exists(collection_name="vector-database-qwen-"+str(self.size)):
+        if not self.qdrant_client.collection_exists(collection_name=f"vector-database-{self.catalogue_name}-qwen-{self.size}"):
             self.qdrant_client.recreate_collection(
-                collection_name="vector-database-qwen-"+str(self.size),
+                collection_name=f"vector-database-{self.catalogue_name}-qwen-{self.size}",
                 vectors_config={
                     "desc_ita": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
                     "desc_eng": models.VectorParams(size=self.size, distance=models.Distance.COSINE),
@@ -96,7 +96,7 @@ class Qwen(Retriever):
                     batch_size = 100 if self.size != 4096 else 20  # adjust batch size based on model size
                     if len(points) >= batch_size:
                         self.qdrant_client.upsert(
-                            collection_name="vector-database-qwen-"+str(self.size),
+                            collection_name=f"vector-database-{self.catalogue_name}-qwen-{self.size}",
                             points=points
                         )
                         points = []
@@ -104,11 +104,11 @@ class Qwen(Retriever):
             # upload points to the vector database
             if points:
                 self.qdrant_client.upsert(
-                    collection_name="vector-database-qwen-"+str(self.size),
+                    collection_name=f"vector-database-{self.catalogue_name}-qwen-{self.size}",
                     points=points
                 )
-            
-        info = self.qdrant_client.get_collection("vector-database-qwen-"+str(self.size))
+
+        info = self.qdrant_client.get_collection(f"vector-database-{self.catalogue_name}-qwen-{self.size}")
         print(f"Vector database ready. Points: {info.points_count}")
 
     def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
@@ -120,7 +120,7 @@ class Qwen(Retriever):
 
         # search in the vector database
         results = self.qdrant_client.search(
-            collection_name="vector-database-qwen-"+str(self.size),
+            collection_name=f"vector-database-{self.catalogue_name}-qwen-{self.size}",
             query_vector=models.NamedVector(name=f"desc_{self.language}", vector=query_vector),
             limit=self.output_length
         )

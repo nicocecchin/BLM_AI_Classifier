@@ -3,11 +3,15 @@ from retrievers.Item import Item
 import os
 import argparse
 from langdetect import detect
+import os
 
 class Retriever:
     def __init__(self, data_source: str, output_length: int):
         self.data_source = data_source
         self.output_length = output_length
+        # get catalogue name from data source
+        filename = os.path.basename(self.data_source)
+        self.catalogue_name = filename[:-4]  # remove .csv extension
 
     def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
         self.language = language

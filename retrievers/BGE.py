@@ -34,9 +34,9 @@ class Bge(Retriever):
         # create qdrant client and database
         #self.qdrant_client = QdrantClient(":memory:")
         self.qdrant_client = QdrantClient(host="localhost", port=6333)
-        if not self.qdrant_client.collection_exists(collection_name=f"vector-database-bge-{self.mode}"):
+        if not self.qdrant_client.collection_exists(collection_name=f"vector-database-{self.catalogue_name}-bge-{self.mode}"):
             self.qdrant_client.recreate_collection(
-                collection_name=f"vector-database-bge-{self.mode}",
+                collection_name=f"vector-database-{self.catalogue_name}-bge-{self.mode}",
                 vectors_config={
                     "desc_ita": models.VectorParams(size=1024, distance=models.Distance.COSINE),
                     "desc_eng": models.VectorParams(size=1024, distance=models.Distance.COSINE),
@@ -93,7 +93,7 @@ class Bge(Retriever):
                     point_id += 1
                     if len(points) >= 100:  # upload points in batches of 100
                         self.qdrant_client.upsert(
-                            collection_name=f"vector-database-bge-{self.mode}",
+                            collection_name=f"vector-database-{self.catalogue_name}-bge-{self.mode}",
                             points=points
                         )
                         points = []
@@ -101,11 +101,11 @@ class Bge(Retriever):
             # upload points to the vector database
             if points:
                 self.qdrant_client.upsert(
-                    collection_name=f"vector-database-bge-{self.mode}",
+                    collection_name=f"vector-database-{self.catalogue_name}-bge-{self.mode}",
                     points=points
                 )
-            
-        info = self.qdrant_client.get_collection(f"vector-database-bge-{self.mode}")
+
+        info = self.qdrant_client.get_collection(f"vector-database-{self.catalogue_name}-bge-{self.mode}")
         print(f"Vector database ready. Points: {info.points_count}")
 
     def retrieve(self, query:str, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
@@ -119,7 +119,7 @@ class Bge(Retriever):
 
         # search in the vector database
         results = self.qdrant_client.search(
-            collection_name=f"vector-database-bge-{self.mode}",
+            collection_name=f"vector-database-{self.catalogue_name}-bge-{self.mode}",
             query_vector=models.NamedVector(name=f"desc_{self.language}", vector=query_vector),
             limit=self.output_length
         )

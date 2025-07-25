@@ -116,7 +116,7 @@ def read_arguments():
     parser.add_argument('--dataset_name', type=str, required=True, help='Name of the dataset.')
     parser.add_argument('--catalogue', type=str, required=True, help='Path of the catalogue.')
     parser.add_argument('--output_folder', type=str, required=True, help='Output folder')
-    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_768', 'sbert_1024', 'qwen_1024', 'qwen_2560', 'qwen_4096', 'bge_dense', 'bge_sparse', 'gte', 'nomic', 'lama', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio', 'hybrid_sbert_1024_bge_m3', 'hybrid_sbert_1024_bge_gemma'], help='Algorithm model to use for retrieval.')
+    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_768', 'sbert_1024', 'qwen_1024', 'qwen_2560', 'qwen_4096', 'bge_dense', 'bge_sparse', 'gte', 'nomic', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio', 'hybrid_sbert_1024_bge_m3', 'hybrid_sbert_1024_bge_gemma'], help='Algorithm model to use for retrieval.')
     parser.add_argument('--language', type=str, default=None, help='Language of the dataset (optional,).', choices=['ita', 'eng'])
 
     args = parser.parse_args()
