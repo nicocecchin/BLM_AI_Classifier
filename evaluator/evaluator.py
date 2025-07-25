@@ -16,7 +16,6 @@ from retrievers.Qwen import Qwen
 from retrievers.BGE import Bge
 from retrievers.Gte import Gte
 from retrievers.Nomic import Nomic
-from retrievers.Ollama import Ollama
 from retrievers.Random import Random
 from retrievers.Fuzzy import Fuzzy
 from retrievers.HybridRetriever import HybridRetriever
