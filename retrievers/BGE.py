@@ -114,8 +114,6 @@ class Bge(Retriever):
 
         # encode the query
         query_vector = self.model.encode([query.lower()], convert_to_numpy=True)[self.mode][0]
-        print(f"Query vector: {query_vector}")
-
 
         # search in the vector database
         results = self.qdrant_client.search(
