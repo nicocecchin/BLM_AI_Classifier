@@ -5,6 +5,7 @@ __pycache__/
 *.csv
 stefano_api/
 qdrant_storage/
+qdrant_storage_2/
 datasets/
 catalogues/
 app/visualize_collections.py
@@ -13,4 +14,5 @@ utils/
 evaluator/output/
 config/
 commands.sh
+commands_screen_1.sh
 log.txt
