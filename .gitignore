@@ -15,4 +15,5 @@ evaluator/output/
 config/
 commands.sh
 commands_screen_1.sh
+commands_screen_1_small.sh
 log.txt
