@@ -43,8 +43,6 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return Gte(data_source=catalogue, output_length=output_length)
     elif model_name == 'nomic':
         return Nomic(data_source=catalogue, output_length=output_length)
-    elif model_name == 'lama':
-        return Ollama(data_source=catalogue, output_length=output_length)
     elif model_name == 'random':
         return Random(data_source=catalogue, output_length=output_length, random_seed=123)
     elif model_name == 'fuzzy_ratio':
