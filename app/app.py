@@ -1,72 +1,88 @@
+from typing import Dict, List, Set, Tuple
 from flask import Flask, render_template, request, jsonify
 from vec_db_functions import vector_search
-import sys
-import os
 from insertion import get_suggested_descriptions
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, project_root)
-
-from retrievers.Bm25 import Bm25
-from retrievers.Fuzzy import Fuzzy
-from retrievers.Sbert import Sbert
-from retrievers.HybridRetriever import HybridRetriever
+from retrievers.Retriever import Retriever
+import configparser
+import os
 
 app = Flask(__name__)
 
-bm25 = Bm25("../datasets/catalogue_01.csv", 10)
-fuzzy = Fuzzy("../datasets/catalogue_01.csv", 10, method='token_sort_ratio')
-sbert_512 = Sbert("../datasets/catalogue_01.csv", 10, size=512)
-sbert_1024 = Sbert("../datasets/catalogue_01.csv", 10, size=1024)
-hybrid_bm25_crossencoder = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="bm25", ranker_name="cross_encoder", model_name="ms-marco-MiniLM-L-6-v2")
-hybrid_sbert_1024_crossencoder = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="sbert_1024", ranker_name="cross_encoder", model_name="ms-marco-MiniLM-L-6-v2")
-hybrid_sbert_1024_bm25 = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="sbert_1024", ranker_name="bm25")
-hybrid_sbert_1024_fuzzy = HybridRetriever("../datasets/catalogue_01.csv", 10, retriever_name="sbert_1024", ranker_name="fuzzy", model_name='token_sort_ratio')
+def read_config()->Tuple[str, str, int, str]:
+    config = configparser.ConfigParser()
 
-models = ['bm25', 'fuzzy', 'sbert_512', 'sbert_1024', 'hybrid_bm25_crossencoder', 'hybrid_sbert_1024_crossencoder', 'hybrid_sbert_1024_bm25', 'hybrid_sbert_1024_fuzzy']
-model = bm25 # Default model
+    # determine the absolute path to config.ini relative to this script
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(base_dir, "config.ini")
+    config.read(config_path)
+    print(f"Configuration loaded: {config.sections()}")
+
+    settings = config["settings"]
+    catalogue = settings["catalogue"]
+    model = settings["retriever"]
+    output_length = int(settings["output_length"])
+    insertion_llm = settings["insertion_llm"]
+
+    return catalogue, model, output_length, insertion_llm
+
+def initialize_retriever(model_name: str, catalogue: str, output_length: int) -> Retriever:
+    from retrievers.Bm25 import Bm25
+    from retrievers.Sbert import Sbert
+    from retrievers.Qwen import Qwen
+    from retrievers.Random import Random
+    from retrievers.Gte import Gte
+    from retrievers.Nomic import Nomic
+    from retrievers.BGE import Bge
+    from retrievers.Fuzzy import Fuzzy
+
+    if model_name == 'bm25':
+        return Bm25(data_source=catalogue, output_length=output_length)
+    elif model_name == 'sbert_512':
+        return Sbert(data_source=catalogue, output_length=output_length, size=512)
+    elif model_name == 'sbert_768':
+        return Sbert(data_source=catalogue, output_length=output_length, size=768)
+    elif model_name == 'sbert_1024':
+        return Sbert(data_source=catalogue, output_length=output_length, size=1024)
+    elif model_name == 'bge':
+        return Bge(data_source=catalogue, output_length=output_length, return_dense=True, return_sparse=False)
+    elif model_name == 'qwen_1024':
+        return Qwen(data_source=catalogue, output_length=output_length, size=1024)
+    elif model_name == 'qwen_2560':
+        return Qwen(data_source=catalogue, output_length=output_length, size=2560)
+    elif model_name == 'qwen_4096':
+        return Qwen(data_source=catalogue, output_length=output_length, size=4096)
+    elif model_name == 'fuzzy_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='ratio')
+    elif model_name == 'fuzzy_sort_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='token_sort_ratio')
+    elif model_name == 'fuzzy_set_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='token_set_ratio')
+    elif model_name == 'gte':
+        return Gte(data_source=catalogue, output_length=output_length)
+    elif model_name == 'nomic':
+        return Nomic(data_source=catalogue, output_length=output_length)
+    elif model_name == 'random':
+        return Random(data_source=catalogue, output_length=output_length, random_seed=123)
+    else:
+        raise ValueError(f"Unknown model name: {model_name}. Supported models are: bm25, sbert_512, sbert_768, sbert_1024, qwen_1024, qwen_2560, qwen_4096, gte, nomic, random.")
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/models')
-def list_models():
-    return jsonify(models)
-
-@app.route('/set_model', methods=['POST'])
-def set_model():
-    selected_model = request.json.get('model')
-    if selected_model:
-        if selected_model == 'bm25':
-            global model
-            model = bm25
-        elif selected_model == 'fuzzy':
-            model = fuzzy
-        elif selected_model == 'sbert_512':  
-            model = sbert_512
-        elif selected_model == 'sbert_1024':
-            model = sbert_1024
-        elif selected_model == 'hybrid_bm25_crossencoder':
-            model = hybrid_bm25_crossencoder
-        elif selected_model == 'hybrid_sbert_1024_crossencoder':
-            model = hybrid_sbert_1024_crossencoder
-        elif selected_model == 'hybrid_sbert_1024_bm25':
-            model = hybrid_sbert_1024_bm25
-        elif selected_model == 'hybrid_sbert_1024_fuzzy': 
-            model = hybrid_sbert_1024_fuzzy
-        else:
-            return jsonify({"status": "error", "message": "Unknown model"}), 400
-        # Set the model for the current session or user
-        print(f"Model set to: {selected_model}")
-        return jsonify({"status": "success", "model": selected_model})
-    return jsonify({"status": "error", "message": "No model specified"}), 400
-
 @app.route('/get_results', methods=['POST'])
 def get_results():
+    # get user input from the request
     data = request.get_json()
     user_input = data.get('input', '')
     
+    print(f"User input received: {user_input}")
+
+    # load configuration from config.ini
+    catalogue, model_name, output_length, _ = read_config()
+    print(f"Using catalogue: {catalogue}, model: {model_name}, output length: {output_length}")
+    # initialize the retriever based on the model name
+    model = initialize_retriever(model_name, catalogue, output_length)
     results = model.retrieve(user_input)
 
     print(f"Time taken to retrieve results: {results[1]}")
@@ -97,15 +113,23 @@ def submit_insertion():
     desc_it = data.get('desc_it', '')
     desc_en = data.get('desc_en', '')
     
-    
     return jsonify("received insertion data", code, desc_it, desc_en)
 
 @app.route('/get_suggestions', methods=['POST'])
 def get_suggestions():
+    # get user input from the request
     data = request.get_json()
     user_input = data.get('input', '')
-    results = vector_search(user_input)
-    (ita, eng) = get_suggested_descriptions(user_input, results)
+
+    # load configuration from config.ini
+    catalogue, model_name, output_length, insertion_llm = read_config()
+
+    # retrieve results using the vector search
+    model = initialize_retriever(model_name, catalogue, output_length)
+    retrived_items, _ = model.retrieve(query=user_input)
+
+    # get the suggested descriptions using the LLM
+    (ita, eng) = get_suggested_descriptions(user_input=user_input, materials=retrived_items, model=insertion_llm)
 
     return jsonify({'ita': ita, 'eng': eng})
 

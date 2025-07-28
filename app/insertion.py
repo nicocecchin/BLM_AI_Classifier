@@ -26,7 +26,6 @@ from retrievers.Qwen import Qwen
 from retrievers.BGE import Bge
 from retrievers.Gte import Gte
 from retrievers.Nomic import Nomic
-from retrievers.Ollama import Ollama
 from retrievers.Random import Random
 from retrievers.Fuzzy import Fuzzy
 from retrievers.Item import Item
@@ -71,8 +70,6 @@ def get_retriever(model_name: str, catalogue: str, output_length: int) -> Retrie
         return Gte(data_source=catalogue, output_length=output_length)
     elif model_name == 'nomic':
         return Nomic(data_source=catalogue, output_length=output_length)
-    elif model_name == 'lama':
-        return Ollama(data_source=catalogue, output_length=output_length)
     elif model_name == 'random':
         return Random(data_source=catalogue, output_length=output_length, random_seed=123)
     elif model_name == 'fuzzy_ratio':
@@ -217,7 +214,6 @@ def read_arguments():
                                                                         'bge_sparse',
                                                                         'gte',
                                                                         'nomic',
-                                                                        'lama',
                                                                         'random',
                                                                         'fuzzy_ratio',
                                                                         'fuzzy_sort_ratio',
