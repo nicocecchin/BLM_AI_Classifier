@@ -107,9 +107,13 @@ def compute_map_k(model: Retriever, dataset: pd.DataFrame, language: str = None,
             scores10.append(0.0)
 
         # Write positions to the output file
+        if ',' in query:
+            query_to_write = f'"{query}"'
+        else:
+            query_to_write = query
         
         with open(output_file, 'a') as f:
-            f.write(f"{query},{output_length},{positive_id},{hard_negative_id},{soft_negative_id},{positive_position},{hard_negative_position},{soft_negative_position}\n")
+            f.write(f"{query_to_write},{output_length},{positive_id},{hard_negative_id},{soft_negative_id},{positive_position},{hard_negative_position},{soft_negative_position}\n")
 
         
 
