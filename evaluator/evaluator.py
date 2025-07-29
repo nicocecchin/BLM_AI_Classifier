@@ -68,7 +68,7 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
-def compute_map_k(model: Retriever, dataset: pd.DataFrame, language: str = None) -> Tuple[float, float, float]:
+def compute_map_k(model: Retriever, dataset: pd.DataFrame, language: str = None, output_file: str = None, output_length: int = 10) -> Tuple[float, float, float]:
     scores1 = []
     scores10 = []
     times = []
@@ -76,33 +76,55 @@ def compute_map_k(model: Retriever, dataset: pd.DataFrame, language: str = None)
     for _, row in tqdm(dataset.iterrows(), total=len(dataset), desc=f"Computing MAP@1 and MAP@10"):
         query = row['query']
         positive_id = row['positive']
+        hard_negative_id = row['hard_negative']
+        soft_negative_id = row['soft_negative']
+
+        positive_position = -1
+        hard_negative_position = -1
+        soft_negative_position = -1
+
         results, retrive_time = model.retrieve(query=query, language=language)
         times.append(retrive_time)
 
-        ids = [item.item_id for item, _ in results[0:10]]
-        if positive_id == ids[0]:
+        ids = [item.item_id for item, _ in results]
+        if positive_id in ids:
+            positive_position = ids.index(positive_id)
+        if hard_negative_id in ids:
+            hard_negative_position = ids.index(hard_negative_id)
+        if soft_negative_id in ids:
+            soft_negative_position = ids.index(soft_negative_id)
+
+        map_ids = [item.item_id for item, _ in results[0:10]]
+        if positive_id == map_ids[0]:
             scores1.append(1.0)
         else:
             scores1.append(0.0)
-        
-        if positive_id in ids:
-            rank = ids.index(positive_id) + 1
+
+        if positive_id in map_ids:
+            rank = map_ids.index(positive_id) + 1
             scores10.append(1.0 / rank)
         else:
             scores10.append(0.0)
+
+        # Write positions to the output file
+        
+        with open(output_file, 'a') as f:
+            f.write(f"{query},{output_length},{positive_id},{hard_negative_id},{soft_negative_id},{positive_position},{hard_negative_position},{soft_negative_position}\n")
+
+        
 
     map_1 = sum(scores1) / len(scores1) if scores1 else 0.0
     map_10 = sum(scores10) / len(scores10) if scores10 else 0.0
     avg_time = sum(times) / len(times)
     return {"score_1": map_1, "score_10": map_10, 'avg_time': avg_time}
 
-def evaluate_model_on_datasets(dataset_paths: List[str], dataset_name: str, catalogue_paths: List[str], model_name: str, language: str = None) -> List[Tuple[str, float, float, float]]:
+def evaluate_model_on_datasets(dataset_paths: List[str], dataset_name: str, catalogue_paths: List[str], model_name: str, language: str = None, output_file: str = None, output_length: int = 10) -> List[Tuple[str, float, float, float]]:
     results = []
     for dataset_path, catalogue_path in zip(dataset_paths, catalogue_paths):
         dataset = pd.read_csv(dataset_path, sep=',')
         dataset = dataset.head(100) # limit to 100 rows for testing
-        model = get_model(model_name, catalogue_path, 10)
-        score_data = compute_map_k(model, dataset, language=language)
+        model = get_model(model_name, catalogue_path, output_length)
+        score_data = compute_map_k(model, dataset, language=language, output_file=output_file, output_length=output_length)
         results.append((dataset_name, score_data['score_1'], score_data['score_10'], score_data['avg_time']))
     return results
 
@@ -115,6 +137,7 @@ def read_arguments():
     parser.add_argument('--output_folder', type=str, required=True, help='Output folder')
     parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_768', 'sbert_1024', 'qwen_1024', 'qwen_2560', 'qwen_4096', 'bge_dense', 'bge_sparse', 'gte', 'nomic', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio', 'hybrid_sbert_1024_bge_m3', 'hybrid_sbert_1024_bge_gemma'], help='Algorithm model to use for retrieval.')
     parser.add_argument('--language', type=str, default=None, help='Language of the dataset (optional,).', choices=['ita', 'eng'])
+    parser.add_argument('--output_length', type=int, default=10, help='Number of results to return from the retriever (default: 10).')
 
     args = parser.parse_args()
     args = vars(args)
@@ -130,15 +153,25 @@ if __name__ == '__main__':
     catalogue_path = args['catalogue']
     model = args['model']
     language = args['language']
+    output_length = args['output_length']
 
     os.makedirs(output_folder, exist_ok=True)
+
+    # Create csv to store positions of the positive document
+    output_file = os.path.join(output_folder, f"positions_{model}.csv")
+    with open(output_file, 'w') as f:
+        f.write('query,output_length,positive,hard_negative,soft_negative,positive_position,hard_negative_position,soft_negative_position\n')
+
     results = evaluate_model_on_datasets(
         dataset_paths=[dataset_path],
         dataset_name=dataset_name,
         catalogue_paths=[catalogue_path],
         model_name=model,
-        language=language
+        language=language,
+        output_file=output_file,
+        output_length=output_length
     )
+
 
     # print the results
     for dataset, map1, map10, avg_time in results:
