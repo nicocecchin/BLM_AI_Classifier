@@ -2,9 +2,6 @@ from typing import List, Tuple
 from retrievers.Item import Item
 
 class Ranker: 
-    """
-    Base class for all rankers.
-    """
     def __init__(self, output_length: int):
         self.output_length = output_length
 
