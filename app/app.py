@@ -22,8 +22,9 @@ def read_config()->Tuple[str, str, int, str]:
     model = settings["retriever"]
     output_length = int(settings["output_length"])
     insertion_llm = settings["insertion_llm"]
+    language = settings["language"]
 
-    return catalogue, model, output_length, insertion_llm
+    return catalogue, model, output_length, insertion_llm, language
 
 def initialize_retriever(model_name: str, catalogue: str, output_length: int) -> Retriever:
     from retrievers.Bm25 import Bm25
@@ -34,6 +35,7 @@ def initialize_retriever(model_name: str, catalogue: str, output_length: int) ->
     from retrievers.Nomic import Nomic
     from retrievers.BGE import Bge
     from retrievers.Fuzzy import Fuzzy
+    from retrievers.HybridRetriever import HybridRetriever
 
     if model_name == 'bm25':
         return Bm25(data_source=catalogue, output_length=output_length)
@@ -63,6 +65,8 @@ def initialize_retriever(model_name: str, catalogue: str, output_length: int) ->
         return Nomic(data_source=catalogue, output_length=output_length)
     elif model_name == 'random':
         return Random(data_source=catalogue, output_length=output_length, random_seed=123)
+    elif model_name == "hybrid_sbert_1024_tfidf":
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', retriever_length=100, ranker_name='tfidf_ranker')
     else:
         raise ValueError(f"Unknown model name: {model_name}. Supported models are: bm25, sbert_512, sbert_768, sbert_1024, qwen_1024, qwen_2560, qwen_4096, gte, nomic, random.")
 
@@ -79,11 +83,11 @@ def get_results():
     print(f"User input received: {user_input}")
 
     # load configuration from config.ini
-    catalogue, model_name, output_length, _ = read_config()
+    catalogue, model_name, output_length, _, language = read_config()
     print(f"Using catalogue: {catalogue}, model: {model_name}, output length: {output_length}")
     # initialize the retriever based on the model name
     model = initialize_retriever(model_name, catalogue, output_length)
-    results = model.retrieve(user_input)
+    results = model.retrieve(user_input, language=language)
 
     print(f"Time taken to retrieve results: {results[1]}")
 
@@ -122,11 +126,11 @@ def get_suggestions():
     user_input = data.get('input', '')
 
     # load configuration from config.ini
-    catalogue, model_name, output_length, insertion_llm = read_config()
+    catalogue, model_name, output_length, insertion_llm, language = read_config()
 
     # retrieve results using the vector search
     model = initialize_retriever(model_name, catalogue, output_length)
-    retrived_items, _ = model.retrieve(query=user_input)
+    retrived_items, _ = model.retrieve(query=user_input, language=language)
 
     # get the suggested descriptions using the LLM
     (ita, eng) = get_suggested_descriptions(user_input=user_input, materials=retrived_items, model=insertion_llm)
