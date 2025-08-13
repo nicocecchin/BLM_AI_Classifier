@@ -18,6 +18,7 @@ from retrievers.Gte import Gte
 from retrievers.Nomic import Nomic
 from retrievers.Random import Random
 from retrievers.Fuzzy import Fuzzy
+from retrievers.Tfidf import Tfidf
 from retrievers.HybridRetriever import HybridRetriever
 
 def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
@@ -51,6 +52,8 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return Fuzzy(data_source=catalogue, output_length=output_length, method='token_sort_ratio')
     elif model_name == 'fuzzy_set_ratio':
         return Fuzzy(data_source=catalogue, output_length=output_length, method='token_set_ratio')
+    elif model_name == 'tfidf':
+        return Tfidf(data_source=catalogue, output_length=output_length)
     elif model_name == 'hybrid_sbert_1024_miniL6':
         return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='cross_encoder', model_name='ms-marco-MiniLM-L-6-v2')
     elif model_name == 'hybrid_sbert_1024_bm25':
@@ -65,10 +68,19 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='bge_m3')
     elif model_name == 'hybrid_sbert_1024_bge_gemma':
         return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', ranker_name='bge_gemma')
+    elif model_name == "hybrid_sbert_1024_tfidf":
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', retriever_length=100, ranker_name='tfidf_ranker')
+    elif model_name == "hybrid_tfidf_sbert_1024":
+        return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='tfidf', retriever_length=100, ranker_name='sbert_1024_ranker')
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
-def compute_map_k(model: Retriever, dataset: pd.DataFrame, language: str = None, output_file: str = None, output_length: int = 10) -> Tuple[float, float, float]:
+def compute_map_k(model: Retriever,
+                  dataset: pd.DataFrame,
+                  language: str = None,
+                  output_file: str = None,
+                  output_file_retriver_error: str = None,
+                  output_length: int = 10) -> Tuple[float, float, float]:
     scores1 = []
     scores10 = []
     times = []
@@ -115,20 +127,30 @@ def compute_map_k(model: Retriever, dataset: pd.DataFrame, language: str = None,
         with open(output_file, 'a') as f:
             f.write(f"{query_to_write},{output_length},{positive_id},{hard_negative_id},{soft_negative_id},{positive_position},{hard_negative_position},{soft_negative_position}\n")
 
-        
+        # Write retriever error if positive document is not in the first position
+        if positive_position != 0:
+            with open(output_file_retriver_error, 'a') as f:
+                f.write(f"{query_to_write},{output_length},{positive_id},{positive_position}\n")
 
     map_1 = sum(scores1) / len(scores1) if scores1 else 0.0
     map_10 = sum(scores10) / len(scores10) if scores10 else 0.0
     avg_time = sum(times) / len(times)
     return {"score_1": map_1, "score_10": map_10, 'avg_time': avg_time}
 
-def evaluate_model_on_datasets(dataset_paths: List[str], dataset_name: str, catalogue_paths: List[str], model_name: str, language: str = None, output_file: str = None, output_length: int = 10) -> List[Tuple[str, float, float, float]]:
+def evaluate_model_on_datasets(dataset_paths: List[str],
+                               dataset_name: str,
+                               catalogue_paths: List[str],
+                               model_name: str,
+                               language: str = None,
+                               output_file: str = None,
+                               output_file_retriver_error: str = None,
+                               output_length: int = 10) -> List[Tuple[str, float, float, float]]:
     results = []
     for dataset_path, catalogue_path in zip(dataset_paths, catalogue_paths):
         dataset = pd.read_csv(dataset_path, sep=',')
         dataset = dataset.head(100) # limit to 100 rows for testing
         model = get_model(model_name, catalogue_path, output_length)
-        score_data = compute_map_k(model, dataset, language=language, output_file=output_file, output_length=output_length)
+        score_data = compute_map_k(model, dataset, language=language, output_file=output_file, output_file_retriver_error=output_file_retriver_error, output_length=output_length)
         results.append((dataset_name, score_data['score_1'], score_data['score_10'], score_data['avg_time']))
     return results
 
@@ -139,7 +161,26 @@ def read_arguments():
     parser.add_argument('--dataset_name', type=str, required=True, help='Name of the dataset.')
     parser.add_argument('--catalogue', type=str, required=True, help='Path of the catalogue.')
     parser.add_argument('--output_folder', type=str, required=True, help='Output folder')
-    parser.add_argument('--model', type=str, required=True, choices=['bm25', 'sbert_512', 'sbert_768', 'sbert_1024', 'qwen_1024', 'qwen_2560', 'qwen_4096', 'bge_dense', 'bge_sparse', 'gte', 'nomic', 'random', 'fuzzy_ratio', 'fuzzy_sort_ratio', 'fuzzy_set_ratio', 'hybrid_sbert_1024_bge_m3', 'hybrid_sbert_1024_bge_gemma'], help='Algorithm model to use for retrieval.')
+    parser.add_argument('--model', type=str, required=True, choices=['bm25',
+                                                                     'sbert_512',
+                                                                     'sbert_768',
+                                                                     'sbert_1024',
+                                                                     'qwen_1024',
+                                                                     'qwen_2560',
+                                                                     'qwen_4096',
+                                                                     'bge_dense',
+                                                                     'bge_sparse',
+                                                                     'gte',
+                                                                     'nomic',
+                                                                     'random',
+                                                                     'fuzzy_ratio',
+                                                                     'fuzzy_sort_ratio',
+                                                                     'fuzzy_set_ratio',
+                                                                     'tfidf',
+                                                                     'hybrid_sbert_1024_bge_m3',
+                                                                     'hybrid_sbert_1024_bge_gemma',
+                                                                     'hybrid_sbert_1024_tfidf',
+                                                                     'hybrid_tfidf_sbert_1024'], help='Algorithm model to use for retrieval.')
     parser.add_argument('--language', type=str, default=None, help='Language of the dataset (optional,).', choices=['ita', 'eng'])
     parser.add_argument('--output_length', type=int, default=10, help='Number of results to return from the retriever (default: 10).')
 
@@ -165,6 +206,11 @@ if __name__ == '__main__':
     output_file = os.path.join(output_folder, f"positions_{model}.csv")
     with open(output_file, 'w') as f:
         f.write('query,output_length,positive,hard_negative,soft_negative,positive_position,hard_negative_position,soft_negative_position\n')
+    
+    # Create csv to store the queries for which the retriver was not able to retrieve the positive document in the first position
+    output_file_retriver_error = os.path.join(output_folder, f"retriever_error_{model}.csv")
+    with open(output_file_retriver_error, 'w') as f:
+        f.write('query,output_length,positive,positive_position\n')
 
     results = evaluate_model_on_datasets(
         dataset_paths=[dataset_path],
@@ -173,9 +219,9 @@ if __name__ == '__main__':
         model_name=model,
         language=language,
         output_file=output_file,
+        output_file_retriver_error=output_file_retriver_error,
         output_length=output_length
     )
-
 
     # print the results
     for dataset, map1, map10, avg_time in results:

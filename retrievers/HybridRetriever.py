@@ -1,67 +1,88 @@
+from typing import List, Tuple
 import os
 import sys
+import time
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
-from retrievers.Fuzzy import Fuzzy
-from rankers.FuzzyRanker import FuzzyRanker
-from rankers.Bm25Ranker import Bm25Ranker
+
+from retrievers.Retriever import Retriever
 from retrievers.Bm25 import Bm25
 from retrievers.Sbert import Sbert
-from retrievers.Retriever import Retriever
-from typing import List, Tuple
+from retrievers.Qwen import Qwen
+from retrievers.BGE import Bge
+from retrievers.Gte import Gte
+from retrievers.Nomic import Nomic
+from retrievers.Random import Random
+from retrievers.Fuzzy import Fuzzy
+from retrievers.Tfidf import Tfidf
 from retrievers.Item import Item
-# from retrievers.Ollama import Ollama
+
+from rankers.Ranker import Ranker
+from rankers.TfidfRanker import TfidfRanker
 from rankers.CrossEncoderModel import CrossEncoderModel
 from rankers.BGEReranker import BGEReranker
-import time
+from rankers.SbertRanker import SbertRanker
 
-import pandas as pd
+def get_retriever(retriever_name: str, catalogue: str, output_length: int) -> Retriever:
+    if retriever_name == 'bm25':
+        return Bm25(data_source=catalogue, output_length=output_length)
+    elif retriever_name == 'sbert_512':
+        return Sbert(data_source=catalogue, output_length=output_length, size=512)
+    elif retriever_name == 'sbert_768':
+        return Sbert(data_source=catalogue, output_length=output_length, size=768)
+    elif retriever_name == 'sbert_1024':
+        return Sbert(data_source=catalogue, output_length=output_length, size=1024)
+    elif retriever_name == 'qwen_1024':
+        return Qwen(data_source=catalogue, output_length=output_length, size=1024)
+    elif retriever_name == 'qwen_2560':
+        return Qwen(data_source=catalogue, output_length=output_length, size=2560)
+    elif retriever_name == 'qwen_4096':
+        return Qwen(data_source=catalogue, output_length=output_length, size=4096)
+    elif retriever_name == 'bge_dense':
+        return Bge(data_source=catalogue, output_length=output_length, return_dense=True, return_sparse=False)
+    elif retriever_name == 'bge_sparse':
+        return Bge(data_source=catalogue, output_length=output_length, return_dense=False, return_sparse=True)
+    elif retriever_name == 'gte':
+        return Gte(data_source=catalogue, output_length=output_length)
+    elif retriever_name == 'nomic':
+        return Nomic(data_source=catalogue, output_length=output_length)
+    elif retriever_name == 'random':
+        return Random(data_source=catalogue, output_length=output_length, random_seed=123)
+    elif retriever_name == 'fuzzy_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='ratio')
+    elif retriever_name == 'fuzzy_sort_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='token_sort_ratio')
+    elif retriever_name == 'fuzzy_set_ratio':
+        return Fuzzy(data_source=catalogue, output_length=output_length, method='token_set_ratio')
+    elif retriever_name == 'tfidf':
+        return Tfidf(data_source=catalogue, output_length=output_length)
+    else:
+        raise ValueError(f"Unknown model: {retriever_name}")
+
+def get_ranker(ranker_name: str, output_length: int) -> Ranker:
+    if ranker_name == "tfidf_ranker":
+        return TfidfRanker(output_length)
+    elif ranker_name == "sbert_1024_ranker":
+        return SbertRanker(output_length, size=1024)
+    else:
+        raise ValueError(f"Unknown ranker: {ranker_name}")
 
 class HybridRetriever(Retriever):
-    def __init__(self, data_source: str, output_length: int, retriever_name:str, ranker_name:str, model_name:str = None):
+    def __init__(self, data_source: str, output_length: int, retriever_name:str, retriever_length:int, ranker_name:str):
         super().__init__(data_source, output_length)
-        self.retriever_length = 100
-        if retriever_name == "bm25":
-            self.retriever = Bm25(data_source, self.retriever_length)
-        elif retriever_name == "fuzzy":
-            self.retriever = Fuzzy(data_source, self.retriever_length, method='token_set_ratio')
-        # elif retriever_name == "Ollama":
-        #     self.retriever = Ollama(data_source, self.retriever_length)
-        elif retriever_name == "sbert_1024":
-            self.retriever = Sbert(data_source, self.retriever_length, size=1024)
-        else:
-            raise ValueError(f"Unknown retriever: {retriever_name}")
-
-        self.output_length = output_length
-        self.ranker_name = ranker_name
-        if ranker_name == "cross_encoder":
-            if model_name is None:
-                raise ValueError("Model name must be provided for CrossEncoder ranker")
-            self.ranker = CrossEncoderModel(self.output_length, model_name=model_name)
-        elif ranker_name == "fuzzy":
-            if model_name is None:
-                raise ValueError("Method must be provided for Fuzzy ranker")
-            self.ranker = FuzzyRanker(self.output_length, method=model_name)
-        elif ranker_name == "bm25":
-            self.ranker = Bm25Ranker(self.output_length)
-        elif ranker_name == "bge_m3":
-            self.ranker = BGEReranker(self.output_length, model_name=ranker_name)
-        elif ranker_name == "bge_gemma":
-            self.ranker = BGEReranker(self.output_length, model_name=ranker_name)
-        else:
-            raise ValueError(f"Unknown ranker: {ranker_name}")
-
-
+        self.retriever = get_retriever(retriever_name, data_source, retriever_length)
+        self.retriever_length = retriever_length
+        self.ranker = get_ranker(ranker_name, output_length)
+        
     def retrieve(self, query, language: str = None) -> Tuple[List[Tuple[Item, float]], float]:
         start = time.time()
 
-        documents, _ = self.retriever.retrieve(query, language=language)
+        # retrieve items using the specified retriever
+        retrieved_items, retrieval_time = self.retriever.retrieve(query, language=language)
 
-        if not documents:
-            return [], time.time() - start
+        print(len(retrieved_items), "items retrieved in", retrieval_time, "seconds")
 
-        ranked_documents = self.ranker.rank(documents, query, language=language)
+        # rank the retrieved items using the specified ranker
+        ranked_items = self.ranker.rank(retrieved_items, query, language=language)
 
-        return ranked_documents[0:10], time.time() - start
-
-
+        return ranked_items, time.time() - start
