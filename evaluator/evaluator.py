@@ -9,6 +9,7 @@ import datetime
 # sys.path.append(retriever_path)
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
+from retrievers.Bm25Matrix import Bm25Matrix
 from retrievers.Retriever import Retriever
 from retrievers.Bm25 import Bm25
 from retrievers.Sbert import Sbert
@@ -72,6 +73,8 @@ def get_model(model_name: str, catalogue: str, output_length: int) -> Retriever:
         return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='sbert_1024', retriever_length=100, ranker_name='tfidf_ranker')
     elif model_name == "hybrid_tfidf_sbert_1024":
         return HybridRetriever(data_source=catalogue, output_length=output_length, retriever_name='tfidf', retriever_length=100, ranker_name='sbert_1024_ranker')
+    elif model_name == "bm25matrix":
+        return Bm25Matrix(data_source=catalogue, output_length=output_length)
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
@@ -148,7 +151,7 @@ def evaluate_model_on_datasets(dataset_paths: List[str],
     results = []
     for dataset_path, catalogue_path in zip(dataset_paths, catalogue_paths):
         dataset = pd.read_csv(dataset_path, sep=',')
-        dataset = dataset.head(100) # limit to 100 rows for testing
+        # dataset = dataset.head(100) # limit to 100 rows for testing
         model = get_model(model_name, catalogue_path, output_length)
         score_data = compute_map_k(model, dataset, language=language, output_file=output_file, output_file_retriver_error=output_file_retriver_error, output_length=output_length)
         results.append((dataset_name, score_data['score_1'], score_data['score_10'], score_data['avg_time']))

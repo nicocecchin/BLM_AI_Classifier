@@ -80,7 +80,7 @@ class HybridRetriever(Retriever):
         # retrieve items using the specified retriever
         retrieved_items, retrieval_time = self.retriever.retrieve(query, language=language)
 
-        print(len(retrieved_items), "items retrieved in", retrieval_time, "seconds")
+        # print(len(retrieved_items), "items retrieved in", retrieval_time, "seconds")
 
         # rank the retrieved items using the specified ranker
         ranked_items = self.ranker.rank(retrieved_items, query, language=language)

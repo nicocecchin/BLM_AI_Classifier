@@ -7,6 +7,7 @@ stefano_api/
 qdrant_storage/
 qdrant_storage_2/
 datasets/
+llm_datasets/
 catalogues/
 app/visualize_collections.py
 app/collections_visualization.html
