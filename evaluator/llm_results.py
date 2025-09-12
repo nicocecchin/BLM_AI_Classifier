@@ -2,7 +2,7 @@
 import pandas as pd
 
 
-def llm_results(input_folder, output_file):
+def llm_results(input_folder, output_file, dataset):
     import os
 
     # Ensure the input folder exists
@@ -15,7 +15,8 @@ def llm_results(input_folder, output_file):
 
     # Iterate through each file in the input folder
     for filename in os.listdir(input_folder):
-        if filename.endswith('.csv'):
+        if filename.startswith(dataset) and filename.endswith('.csv'):
+        # if filename.endswith('.csv'):
             file_path = os.path.join(input_folder, filename)
             data = pd.read_csv(file_path)
             
@@ -38,8 +39,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Evaluate LLM results.")
     parser.add_argument("--input_folder", type=str, required=True, help="Path to the input folder containing queries and retrieved items.")
     parser.add_argument("--output_file", type=str, required=True, help="Path to the output file to save evaluation results.")
+    parser.add_argument("--dataset", type=str, required=True, help="Name of the dataset being evaluated.")
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
-    llm_results(args.input_folder, args.output_file)
+    llm_results(args.input_folder, args.output_file, args.dataset)

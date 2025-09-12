@@ -6,7 +6,7 @@ import time
 import csv
 import re
 
-class Bm25Matrix(Retriever):
+class Bm25(Retriever):
     def __init__(self, data_source: str, output_length: int):
         super().__init__(data_source, output_length)
 

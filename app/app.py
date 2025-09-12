@@ -79,15 +79,21 @@ def get_results():
     # get user input from the request
     data = request.get_json()
     user_input = data.get('input', '')
-    
+    lang = data.get('lang', '')
+    if lang == 'it':
+        lang = 'ita'
+    elif lang == 'en':
+        lang = 'eng'
+
     print(f"User input received: {user_input}")
 
     # load configuration from config.ini
-    catalogue, model_name, output_length, _, language = read_config()
+    # catalogue, model_name, output_length, _, language = read_config()
+    catalogue, model_name, output_length, _, _ = read_config()
     print(f"Using catalogue: {catalogue}, model: {model_name}, output length: {output_length}")
     # initialize the retriever based on the model name
     model = initialize_retriever(model_name, catalogue, output_length)
-    results = model.retrieve(user_input, language=language)
+    results = model.retrieve(user_input, language=lang)
 
     print(f"Time taken to retrieve results: {results[1]}")
 
@@ -114,23 +120,31 @@ def insert():
 def submit_insertion():
     data = request.get_json()
     code = data.get('code', '')
-    desc_it = data.get('desc_it', '')
-    desc_en = data.get('desc_en', '')
+    desc_ita = data.get('desc_ita', '')
+    desc_eng = data.get('desc_eng', '')
     
-    return jsonify("received insertion data", code, desc_it, desc_en)
+    return jsonify("received insertion data", code, desc_ita, desc_eng)
 
 @app.route('/get_suggestions', methods=['POST'])
 def get_suggestions():
     # get user input from the request
     data = request.get_json()
     user_input = data.get('input', '')
+    user_input = data.get('input', '')
+    lang = data.get('lang', '')
+    if lang == 'it':
+        lang = 'ita'
+    elif lang == 'en':
+        lang = 'eng'
 
+    print(f"User input for suggestions: {user_input}")
+    print(f"Language for suggestions: {lang}")
     # load configuration from config.ini
-    catalogue, model_name, output_length, insertion_llm, language = read_config()
+    catalogue, model_name, output_length, insertion_llm, _ = read_config()
 
     # retrieve results using the vector search
     model = initialize_retriever(model_name, catalogue, output_length)
-    retrived_items, _ = model.retrieve(query=user_input, language=language)
+    retrived_items, _ = model.retrieve(query=user_input, language=lang)
 
     # get the suggested descriptions using the LLM
     (ita, eng) = get_suggested_descriptions(user_input=user_input, materials=retrived_items, model=insertion_llm)

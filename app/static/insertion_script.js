@@ -1,179 +1,224 @@
 $(document).ready(function () {
   console.log('✅ DOM pronto e script caricato');
 
+  const translations = {
+    it: {
+      title: "Inserimento nuovo materiale",
+      labelDescIt: "Descrizione breve (Italiano)",
+      labelDescEn: "Descrizione breve (Inglese)",
+      createBtn: "Inserisci",
+      cancelBtn: "Annulla",
+      loading: "Caricamento...",
+      suggestionError: "Errore nella richiesta di suggerimenti",
+      submitOk: "Inserimento OK",
+      submitError: "Errore invio"
+    },
+    en: {
+      title: "Insert new material",
+      labelDescIt: "Short description (Italian)",
+      labelDescEn: "Short description (English)",
+      createBtn: "Submit",
+      cancelBtn: "Cancel",
+      loading: "Loading...",
+      suggestionError: "Error with suggestion request",
+      submitOk: "Insertion OK",
+      submitError: "Error on submission"
+    }
+  };
+
+  // language
+  let selectedLang = localStorage.getItem('lang') || 'it';
+  function applyLang(lang) {
+    if (!lang) lang = 'it';
+    selectedLang = lang;
+    $('#insertionTitle').text(translations[lang].title);
+    $('#labelDescIt').text(translations[lang].labelDescIt);
+    $('#labelDescEn').text(translations[lang].labelDescEn);
+    $('#createBtn').text(translations[lang].createBtn);
+    $('#cancelBtn').text(translations[lang].cancelBtn);
+    document.documentElement.lang = (lang === 'it') ? 'it' : 'en';
+  }
+  applyLang(selectedLang);
+  $(document).on('click', '#langToggle', function () {
+    setTimeout(() => applyLang(localStorage.getItem('lang') || 'it'), 25);
+  });
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'lang') applyLang(e.newValue || 'it');
+  });
+
+  // state
   let selectedIt = null;
   let selectedEn = null;
 
-  // Ripristina l’input principale
+  // restore main input
   const saved = localStorage.getItem('savedUserInput');
-  if (saved) {
-    console.log('📥 Ripristinato da localStorage:', saved);
-    $('#userInput').val(saved);
+  if (saved) $('#userInput').val(saved);
+
+  // utils
+  function escapeHtml(str) {
+    return String(str === undefined || str === null ? '' : str)
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#39;');
   }
 
-  // Funzione di setup per IT/EN
-  function setupSelection(selector, setter) {
-    $(selector).on('click', 'input', function () {
-      const $this = $(this);
-      const was = $this.hasClass('selected');
-      console.log(`🖱️ Click su ${selector}:`, $this.val());
+  // Create ONE single box per suggestion: a card with border, input (borderless) + counter
+  function createSuggestionItem(text) {
+    const safeText = escapeHtml(text);
+    const $card = $(`
+      <div class="suggestion-card d-flex align-items-center mb-2 p-2 border rounded">
+        <input type="text" class="suggestion-input flex-grow-1 me-2" value="${safeText}" readonly aria-label="suggestion">
+        <small class="char-count text-muted ms-1" aria-hidden="true">0</small>
+      </div>
+    `);
+    const $input = $card.find('.suggestion-input');
+    const $counter = $card.find('.char-count');
+    $counter.text($input.val().length);
+    return $card;
+  }
 
-      // Deseleziona tutto
-      $(selector + ' input')
-        .removeClass('selected')
-        .prop('readonly', true);
+  // selection handling (delegated)
+  function setupSelection(selector, setter) {
+    $(selector).on('click', '.suggestion-input', function (e) {
+      e.stopPropagation();
+      const $input = $(this);
+      const $card = $input.closest('.suggestion-card');
+      const was = $input.hasClass('selected');
+
+      // deselect all in group
+      $(selector + ' .suggestion-input').removeClass('selected').prop('readonly', true);
+      $(selector + ' .suggestion-card').removeClass('selected-card');
 
       if (!was) {
-        $this
-          .addClass('selected')
-          .prop('readonly', false)
-          .focus();
-        setter($this);
+        $input.addClass('selected').prop('readonly', false).focus().select();
+        $card.addClass('selected-card');
+        setter($input);
       } else {
+        $input.removeClass('selected').prop('readonly', true);
+        $card.removeClass('selected-card');
         setter(null);
       }
       checkReady();
     });
   }
 
-  // Abilita/disabilita submit
   function checkReady() {
     const ready = Boolean(selectedIt && selectedEn);
-    console.log('🧪 checkReady → IT:', selectedIt?.val(), 'EN:', selectedEn?.val(), '→ ready=', ready);
     $('#createBtn').prop('disabled', !ready);
   }
 
-  // Inizializza
-  // setupSelection('#descIt', it => selectedIt = it);
-  // setupSelection('#descEn', en => selectedEn = en);
-
+  // show suggestions
   function showSuggestions(it_suggestions, en_suggestions) {
     $('#descIt').empty();
     $('#descEn').empty();
 
-    it_suggestions.forEach(element => {
-      const $item = $(`
-        <input type="text" class="list-group-item editable form-control mb-2" value="${element}" readonly>
-      `);
-      $('#descIt').append($item)
-    });
+    it_suggestions.forEach(el => $('#descIt').append(createSuggestionItem(el)));
+    en_suggestions.forEach(el => $('#descEn').append(createSuggestionItem(el)));
 
-    en_suggestions.forEach(element => {
-      const $item = $(`
-        <input type="text" class="list-group-item editable form-control mb-2" value="${element}" readonly>
-      `);
-      $('#descEn').append($item)
-    });
+    selectedIt = null;
+    selectedEn = null;
+    checkReady();
   }
 
+  // update counters on input
+  $('#descIt, #descEn').on('input', '.suggestion-input', function () {
+    const $input = $(this);
+    const len = ($input.val() || '').length;
+    $input.closest('.suggestion-card').find('.char-count').text(len);
+  });
+
+  // loading
   function loading(){
     $('#descIt').empty();
     $('#descEn').empty();
-
-    const $loadit = $(`
-      <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+    const tpl = `
+      <div class="d-flex align-items-center py-2">
+        <div class="spinner-border text-primary me-2" role="status" aria-hidden="true"></div>
+        <small class="text-muted">${translations[selectedLang].loading}</small>
       </div>
-    `);
-    const $loaden = $(`
-      <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-      </div>
-    `);
-
-    $('#descIt').append($loadit)
-    $('#descEn').append($loaden)
+    `;
+    $('#descIt').append(tpl);
+    $('#descEn').append(tpl);
   }
 
-  $('#submitBtn').on('click', function() {
+  setupSelection('#descIt', it => { selectedIt = it; });
+  setupSelection('#descEn', en => { selectedEn = en; });
+
+  // request suggestions
+  function requestSuggestions() {
     const input = $('#userInput').val().trim();
     localStorage.setItem('savedUserInput', input);
-    loading()
-    if (input) {
-      $.ajax({
-        url: '/get_suggestions',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({ input: input }),
-        success: function (data) {
-          const { ita, eng } = data;
-          showSuggestions(ita, eng)
-          console.log(data);
-        },
-        error: function () {
-          alert('Error with the suggestion request');
-        }
-      });
-    }
-  })
+    if (!input) return;
 
-  $(document).on('keydown', function(event) {
-    if (event.key === 'Enter') {
-      const input = $('#userInput').val().trim();
-      localStorage.setItem('savedUserInput', input);
-      if (input) {
-        $.ajax({
-          url: '/get_suggestions',
-          method: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify({ input: input }),
-          success: function (data) {
-            const { ita, eng } = data;
-            showSuggestions(ita, eng)
-            console.log(data);
-          },
-          error: function () {
-            alert('Error with the suggestion request');
-          }
-        });
+    loading();
+
+    $.ajax({
+      url: '/get_suggestions',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({ input: input, lang: selectedLang }),
+      success: function (data) {
+        const { ita = [], eng = [] } = data || {};
+        showSuggestions(ita, eng);
+      },
+      error: function () {
+        alert(translations[selectedLang].suggestionError);
+        $('#descIt').empty(); $('#descEn').empty();
       }
-    }
+    });
+  }
+
+  $('#submitBtn').on('click', requestSuggestions);
+  $(document).on('keydown', function(event) {
+    if (event.key === 'Enter') requestSuggestions();
   });
-    
-  // Submit unico
+
+  // final submit
   $('#createBtn').on('click', function () {
-    console.log('🖱️ createBtn cliccato');
-    if (!(selectedIt && selectedEn)) {
-      console.warn('❌ Mancano selezioni!');
-      return;
-    }
-    // Salva input principale
+    if (!(selectedIt && selectedEn)) return;
+
     const main = $('#userInput').val().trim();
     localStorage.setItem('savedUserInput', main);
-    console.log('📥 Salvato main input:', main);
 
-    // Prepara payload
     const payload = {
-      code: $('#materialCode').val().trim(),
+      code: ($('#materialCode').length ? $('#materialCode').val().trim() : null),
       desc_it: selectedIt.val().trim(),
-      desc_en: selectedEn.val().trim()
+      desc_en: selectedEn.val().trim(),
+      lang: selectedLang,
+      main_input: main
     };
-    console.log('📤 Payload:', payload);
 
-    // AJAX
     $.ajax({
       method: 'POST',
       url: '/submit_insertion',
       contentType: 'application/json',
       data: JSON.stringify(payload),
     })
-    .done(resp => {
-      console.log('✅ Response:', resp);
-      alert('Inserimento OK');
-      // window.location.href = '/';
+    .done(() => {
+      alert(translations[selectedLang].submitOk);
+      window.location.href = '/';
     })
-    .fail((xhr, status, err) => {
-      console.error('❌ Errore AJAX:', status, err);
-      alert('Errore invio');
+    .fail(() => {
+      alert(translations[selectedLang].submitError);
     });
   });
 
-  // Cancel
+  // cancel
   $('#cancelBtn').on('click', function () {
-    console.log('🖱️ cancelBtn cliccato');
     const main = $('#userInput').val().trim();
     localStorage.setItem('savedUserInput', main);
-    console.log('📥 Salvato main input:', main);
     window.location.href = '/';
   });
+
+  // click outside -> deselect (remove selected-card border)
+  $(document).on('click', function (e) {
+    if (!$(e.target).closest('#descIt, #descEn').length) {
+      $('#descIt .suggestion-input, #descEn .suggestion-input').removeClass('selected').prop('readonly', true);
+      $('#descIt .suggestion-card, #descEn .suggestion-card').removeClass('selected-card');
+      selectedIt = null; selectedEn = null; checkReady();
+    }
+  });
+
 });
